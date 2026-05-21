@@ -1,25 +1,43 @@
 import { supabase } from '../lib/supabase';
 
 export const loginApi = async (login, password) => {
-  // Supposing 'login' could be email or username. Supabase auth uses email by default.
-  // For username login, we would need a custom edge function or query profile first.
-  // Let's assume login is email for Supabase.
+  let email = login;
+
+  // If login is a username (no @), find the email from profiles
+  if (!login.includes('@')) {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', login)
+      .single();
+
+    if (profileError || !profile) {
+      throw new Error('اسم المستخدم غير موجود');
+    }
+
+    // Get the email from auth.users via the profile id
+    const { data: { user }, error: userError } = await supabase.auth.admin?.getUserById?.(profile.id) || {};
+    
+    // Since we can't use admin API on client, get email from profiles if stored
+    // Alternative: store email in profiles table
+    throw new Error('الرجاء استخدام البريد الإلكتروني لتسجيل الدخول');
+  }
+
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: login,
-    password: password,
+    email,
+    password,
   });
-  
+
   if (error) throw new Error(error.message);
-  
-  // Fetch profile
+
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', data.user.id)
     .single();
-    
+
   if (profileError) throw new Error(profileError.message);
-  
+
   return {
     token: data.session.access_token,
     user: { ...data.user, ...profile }
@@ -60,7 +78,7 @@ export const registerApi = async (userData) => {
   if (data.user) {
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ username, full_name, phone })
+      .update({ username, full_name, phone, email })
       .eq('id', data.user.id);
       
     if (profileError) console.error("Profile update failed:", profileError);

@@ -26,7 +26,12 @@ const useAuthStore = create((set, get) => ({
       set({ token: data.token, user: data.user, isLoading: false });
       return true;
     } catch (err) {
-      const errMsg = err.response?.data?.message || 'اسم المستخدم أو كلمة المرور غير صحيحة';
+      const errorMap = {
+        'Invalid login credentials': 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+        'Email not confirmed': 'يرجى تأكيد بريدك الإلكتروني أولاً',
+        'Too many requests': 'محاولات كثيرة، يرجى الانتظار قليلاً',
+      };
+      const errMsg = errorMap[err.message] || err.message || 'فشل تسجيل الدخول';
       set({ error: errMsg, isLoading: false });
       throw new Error(errMsg);
     }

@@ -4,7 +4,7 @@ import useAuthStore from '../store/useAuthStore';
 import useSettingsStore from '../store/useSettingsStore';
 import useNotification from '../hooks/useNotification';
 import {
-  Lock, Mail, User as UserIcon, Eye, EyeOff,
+  Lock, Mail, Eye, EyeOff,
   Shirt, DollarSign, TrendingUp, Package,
   ChevronLeft, LogIn,
   BarChart3, ShieldCheck, Zap, Globe
@@ -138,11 +138,11 @@ export default function Login() {
 
             <form onSubmit={handleLoginSubmit} className="flex flex-col gap-5 text-right animate-fadeIn">
               <Input
-                label="البريد الإلكتروني أو اسم المستخدم"
-                placeholder="أدخل اسم المستخدم أو الإيميل"
+                label="البريد الإلكتروني"
+                placeholder="أدخل بريدك الإلكتروني"
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
-                icon={UserIcon}
+                icon={Mail}
                 required
                 className="bg-zinc-900/60 border-zinc-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-accent-primary text-white placeholder-zinc-500"
               />

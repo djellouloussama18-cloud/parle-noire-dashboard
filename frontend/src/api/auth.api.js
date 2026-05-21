@@ -101,3 +101,11 @@ export const verifyOTPApi = async (email, otp) => {
   return data;
 };
 
+export const sendChangePasswordOTPApi = async () => {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user?.email) throw new Error(userError?.message || 'User not found');
+  const { error } = await supabase.auth.signInWithOtp({ email: user.email });
+  if (error) throw new Error(error.message);
+  return { success: true };
+};
+

@@ -1,32 +1,18 @@
 import { supabase } from '../lib/supabase';
 
 export const loginApi = async (login, password) => {
-  let email = login;
-
-  // If login is a username (no @), find the email from profiles
-  if (!login.includes('@')) {
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', login)
-      .single();
-
-    if (profileError || !profile) {
-      throw new Error('اسم المستخدم غير موجود');
-    }
-
-    // Get the email from auth.users via the profile id
-    const { data: { user }, error: userError } = await supabase.auth.admin?.getUserById?.(profile.id) || {};
-    
-    // Since we can't use admin API on client, get email from profiles if stored
-    // Alternative: store email in profiles table
-    throw new Error('الرجاء استخدام البريد الإلكتروني لتسجيل الدخول');
-  }
+  console.log('=== LOGIN ATTEMPT ===');
+  console.log('Email:', login);
+  console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+  console.log('Anon Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
 
   const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+    email: login,
+    password: password,
   });
+
+  console.log('Supabase response data:', data);
+  console.log('Supabase response error:', error);
 
   if (error) throw new Error(error.message);
 

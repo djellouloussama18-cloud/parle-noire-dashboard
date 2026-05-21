@@ -91,3 +91,13 @@ export const changePasswordApi = async (newPassword) => {
   return { success: true };
 };
 
+export const verifyOTPApi = async (email, otp) => {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token: otp,
+    type: 'email',
+  });
+  if (error) throw new Error(error.message);
+  return data;
+};
+

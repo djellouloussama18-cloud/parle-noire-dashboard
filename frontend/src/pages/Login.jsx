@@ -56,7 +56,7 @@ export default function Login() {
       const success = await loginUser(login, password);
       if (success) {
         showSuccess('تم تسجيل الدخول بنجاح! مرحباً بك.');
-        navigate('/');
+        setTimeout(() => navigate('/'), 100);
       }
     } catch (err) {
       setShake(true);

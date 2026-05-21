@@ -19,6 +19,7 @@ const useAuthStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const data = await loginApi(usernameOrEmail, password);
+      console.log('Login response:', data);
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('login_time', Date.now().toString());

@@ -5,9 +5,7 @@ import './index.css';
 import { setupOnlineSync } from './services/offline-queue.service.js';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  <App />
 );
 
 // Initialise offline queue auto-sync on reconnect

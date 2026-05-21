@@ -5,7 +5,46 @@ import useSettingsStore from './store/useSettingsStore';
 
 // Layout & UI
 import MainLayout from './components/layout/MainLayout';
-import ErrorBoundary from './components/ErrorBoundary';
+import PageErrorBoundary from './components/ErrorBoundary';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    console.error('App Error:', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: '100vh', background: '#000', color: '#fff',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: '16px'
+        }}>
+          <h2>حدث خطأ غير متوقع</h2>
+          <p style={{ color: '#888', fontSize: '14px' }}>
+            {this.state.error?.message}
+          </p>
+          <button
+            onClick={() => { this.setState({ hasError: false }); window.location.href = '/login'; }}
+            style={{
+              padding: '10px 24px', background: '#00FF7F', color: '#000',
+              border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'
+            }}
+          >
+            العودة لتسجيل الدخول
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Pages
 import Login from './pages/Login';
@@ -82,12 +121,13 @@ export default function App() {
   }, [language]);
 
   return (
-    <Router>
+    <ErrorBoundary>
+      <Router>
       <Routes>
         {/* Public Auth Pages */}
-        <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
-        <Route path="/register" element={<ErrorBoundary><Register /></ErrorBoundary>} />
-        <Route path="/forgot-password" element={<ErrorBoundary><ForgotPassword /></ErrorBoundary>} />
+        <Route path="/login" element={<PageErrorBoundary><Login /></PageErrorBoundary>} />
+        <Route path="/register" element={<PageErrorBoundary><Register /></PageErrorBoundary>} />
+        <Route path="/forgot-password" element={<PageErrorBoundary><ForgotPassword /></PageErrorBoundary>} />
 
         {/* Protected POS System */}
         <Route
@@ -185,5 +225,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
+    </ErrorBoundary>
   );
 }

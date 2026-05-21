@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/axios.config';
+import { getReportsSummaryApi, getReportsChartsApi } from '../api/reports.api';
+import { getSalesApi } from '../api/sales.api';
 import useInventoryStore from '../store/useInventoryStore';
 import useSettingsStore from '../store/useSettingsStore';
 import useNotification from '../hooks/useNotification';
@@ -59,14 +60,14 @@ export default function Dashboard() {
       await fetchCategories();
 
       const [sumRes, chartsRes, salesRes] = await Promise.all([
-        api.get('/reports/summary', { params: { period: p } }),
-        api.get('/reports/charts', { params: { period: p } }),
-        api.get('/sales')
+        getReportsSummaryApi(p),
+        getReportsChartsApi(p),
+        getSalesApi()
       ]);
 
-      setSummary(sumRes.data);
-      setChartsData(chartsRes.data);
-      setRecentSales(salesRes.data.slice(0, 5));
+      setSummary(sumRes);
+      setChartsData(chartsRes);
+      setRecentSales(salesRes.slice(0, 5));
     } catch (err) {
       showError(isEn ? 'Error loading dashboard data' : 'حدث خطأ أثناء تحميل بيانات لوحة التحكم');
     } finally {

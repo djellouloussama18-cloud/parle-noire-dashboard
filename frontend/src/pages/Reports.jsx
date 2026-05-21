@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import api from '../api/axios.config';
+import { getReportsSummaryApi, getReportsChartsApi } from '../api/reports.api';
+import { getSalesApi } from '../api/sales.api';
 import useNotification from '../hooks/useNotification';
 import useSettingsStore from '../store/useSettingsStore';
 import formatCurrency from '../utils/formatCurrency';
@@ -53,14 +54,14 @@ export default function Reports() {
   const loadReports = async () => {
     setIsLoading(true);
     try {
-      const sumRes = await api.get(`/reports/summary?period=${period}`);
-      setSummary(sumRes.data);
+      const sumRes = await getReportsSummaryApi(period);
+      setSummary(sumRes);
 
-      const chartsRes = await api.get(`/reports/charts?period=${period}`);
-      setChartsData(chartsRes.data);
+      const chartsRes = await getReportsChartsApi(period);
+      setChartsData(chartsRes);
 
-      const logsRes = await api.get('/sales');
-      setSalesLogs(logsRes.data);
+      const logsRes = await getSalesApi();
+      setSalesLogs(logsRes);
     } catch (e) {
       showError(isEn ? 'Failed to load reports and analytics' : 'فشل تحميل التقارير والتحليلات');
     } finally {
@@ -73,23 +74,9 @@ export default function Reports() {
   }, [period]);
 
   const handleExportPDF = () => {
-    const token = localStorage.getItem('token');
-    const url = `${api.defaults.baseURL}/reports/export?period=${period}&lang=${language}`;
-    const w = window.open('', '_blank', 'width=800,height=900,left=200,top=50');
-    if (!w) { alert(isEn ? 'Please allow popups to print' : 'يرجى السماح بالنوافذ المنبثقة للطباعة'); return; }
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => res.text())
-      .then(html => {
-        w.document.write(html);
-        w.document.close();
-        w.focus();
-        setTimeout(() => { w.print(); w.close(); }, 500);
-      })
-      .catch(() => {
-        w.close();
-        showError(isEn ? 'Failed to export report' : 'فشل تصدير التقرير');
-      });
-    showSuccess(isEn ? 'Exporting report...' : 'جاري تصدير التقرير...');
+    // This previously relied on a Node.js backend to generate HTML
+    // With Supabase, we would implement a client-side PDF generation like jspdf
+    showError(isEn ? 'PDF Export is not yet implemented for the serverless version' : 'تصدير PDF غير مفعل حالياً في النسخة السحابية');
   };
 
   return (

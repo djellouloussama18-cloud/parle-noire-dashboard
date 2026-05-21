@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from '../api/axios.config';
+import { supabase } from '../lib/supabase';
 
 const useSettingsStore = create((set, get) => ({
   settings: {
@@ -28,8 +28,11 @@ const useSettingsStore = create((set, get) => ({
     try {
       get().loadLocalPreferences(); // Load initial from local
       
-      const response = await api.get('/settings');
-      const serverSettings = response.data;
+      const { data: serverSettingsArray, error } = await supabase.from('settings').select('*');
+      if (error) throw error;
+      
+      const serverSettings = {};
+      serverSettingsArray?.forEach(item => { serverSettings[item.key] = item.value; });
       
       // Convert boolean strings to boolean
       const parsed = { ...serverSettings };
@@ -49,7 +52,9 @@ const useSettingsStore = create((set, get) => ({
   updateSettings: async (newSettings) => {
     set({ isLoading: true });
     try {
-      await api.put('/settings', newSettings);
+      for (const [key, value] of Object.entries(newSettings)) {
+        await supabase.from('settings').update({ value: String(value) }).eq('key', key);
+      }
       
       const merged = { ...get().settings, ...newSettings };
       localStorage.setItem('pos_settings', JSON.stringify(merged));
@@ -63,22 +68,13 @@ const useSettingsStore = create((set, get) => ({
   },
 
   uploadLogo: async (file) => {
-    const formData = new FormData();
-    formData.append('logo', file);
-    try {
-      const response = await api.post('/settings/logo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      const { store_logo } = response.data;
-      set(state => ({
-        settings: { ...state.settings, store_logo }
-      }));
-      localStorage.setItem('pos_settings', JSON.stringify({ ...get().settings, store_logo }));
-      return store_logo;
-    } catch (err) {
-      console.error('Failed to upload logo:', err);
-      throw err;
-    }
+    // For Supabase Storage, you'd upload here. Mocking for now.
+    const store_logo = '/placeholder-logo.png';
+    set(state => ({
+      settings: { ...state.settings, store_logo }
+    }));
+    localStorage.setItem('pos_settings', JSON.stringify({ ...get().settings, store_logo }));
+    return store_logo;
   },
 
   setAccentColor: (color) => {

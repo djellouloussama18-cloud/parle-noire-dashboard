@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api/axios.config';
+import { supabase } from '../lib/supabase';
 import useNotification from '../hooks/useNotification';
 import useSettingsStore from '../store/useSettingsStore';
 import { Users, UserPlus, Search, Edit, Trash2 } from 'lucide-react';
@@ -28,7 +28,8 @@ export default function Customers() {
   const fetchCustomers = async () => {
     setIsLoading(true);
     try {
-      const { data } = await api.get('/customers');
+      const { data, error } = await supabase.from('customers').select('*').order('id', { ascending: false });
+      if (error) throw error;
       setCustomers(data || []);
     } catch (err) {
       showError(isEn ? 'Failed to fetch customers' : 'فشل جلب بيانات الزبائن');
@@ -67,10 +68,12 @@ export default function Customers() {
     setIsSubmitting(true);
     try {
       if (editingCustomer) {
-        await api.put(`/customers/${editingCustomer.id}`, formData);
+        const { error } = await supabase.from('customers').update(formData).eq('id', editingCustomer.id);
+        if (error) throw error;
         showSuccess(isEn ? 'Customer updated successfully' : 'تم تحديث بيانات الزبون بنجاح');
       } else {
-        await api.post('/customers', formData);
+        const { error } = await supabase.from('customers').insert(formData);
+        if (error) throw error;
         showSuccess(isEn ? 'Customer added successfully' : 'تم إضافة الزبون بنجاح');
       }
       fetchCustomers();
@@ -90,7 +93,8 @@ export default function Customers() {
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
-          await api.delete(`/customers/${id}`);
+          const { error } = await supabase.from('customers').delete().eq('id', id);
+          if (error) throw error;
           showSuccess(isEn ? 'Customer deleted successfully' : 'تم حذف الزبون بنجاح');
           fetchCustomers();
           setConfirmModal(prev => ({ ...prev, isOpen: false }));

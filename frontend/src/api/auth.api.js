@@ -1,46 +1,87 @@
-import api from './axios.config';
+import { supabase } from '../lib/supabase';
 
 export const loginApi = async (login, password) => {
-  const response = await api.post('/auth/login', { login, password });
-  return response.data;
+  // Supposing 'login' could be email or username. Supabase auth uses email by default.
+  // For username login, we would need a custom edge function or query profile first.
+  // Let's assume login is email for Supabase.
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: login,
+    password: password,
+  });
+  
+  if (error) throw new Error(error.message);
+  
+  // Fetch profile
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', data.user.id)
+    .single();
+    
+  if (profileError) throw new Error(profileError.message);
+  
+  return {
+    token: data.session.access_token,
+    user: { ...data.user, ...profile }
+  };
 };
 
 export const logoutApi = async () => {
-  const response = await api.post('/auth/logout');
-  return response.data;
+  const { error } = await supabase.auth.signOut();
+  if (error) throw new Error(error.message);
+  return { success: true };
 };
 
 export const getMeApi = async () => {
-  const response = await api.get('/auth/me');
-  return response.data;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error(authError?.message || 'User not found');
+  
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+    
+  if (profileError) throw new Error(profileError.message);
+  
+  return { ...user, ...profile };
 };
 
-export const changePasswordApi = async (otp, newPassword) => {
-  const response = await api.post('/auth/change-password', { otp, newPassword });
-  return response.data;
-};
-
-export const registerApi = async (data) => {
-  const response = await api.post('/auth/register', data);
-  return response.data;
-};
-
-export const verifyOTPApi = async (email, otp) => {
-  const response = await api.post('/auth/verify-otp', { email, otp });
-  return response.data;
+export const registerApi = async (userData) => {
+  const { email, password, username, full_name, phone } = userData;
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+  
+  if (error) throw new Error(error.message);
+  
+  // Insert profile is handled by DB triggers, or we can update it here
+  if (data.user) {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ username, full_name, phone })
+      .eq('id', data.user.id);
+      
+    if (profileError) console.error("Profile update failed:", profileError);
+  }
+  
+  return { user: data.user };
 };
 
 export const forgotPasswordApi = async (email) => {
-  const response = await api.post('/auth/forgot-password', { email });
-  return response.data;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (error) throw new Error(error.message);
+  return { success: true };
 };
 
 export const resetPasswordApi = async (email, otp, newPassword) => {
-  const response = await api.post('/auth/reset-password', { email, otp, newPassword });
-  return response.data;
+  // Supabase uses verifyOtp or updates user after click
+  // Assuming user is authenticated via magic link or recovery token
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw new Error(error.message);
+  return { success: true };
 };
 
-export const sendChangePasswordOTPApi = async () => {
-  const response = await api.post('/auth/send-change-otp');
-  return response.data;
-};

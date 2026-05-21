@@ -1,31 +1,42 @@
-import api from './axios.config';
+import { supabase } from '../lib/supabase';
 
 export const getNotesApi = async (params = {}) => {
-  const response = await api.get('/notes', { params });
-  return response.data;
+  let query = supabase.from('notes').select('*').order('created_at', { ascending: false });
+  if (params.unreadOnly) {
+    query = query.eq('read', false);
+  }
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const createNoteApi = async (noteData) => {
-  const response = await api.post('/notes', noteData);
-  return response.data;
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase.from('notes').insert({ ...noteData, created_by: user?.id }).select().single();
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const updateNoteApi = async (id, noteData) => {
-  const response = await api.put(`/notes/${id}`, noteData);
-  return response.data;
+  const { data, error } = await supabase.from('notes').update(noteData).eq('id', id).select().single();
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const deleteNoteApi = async (id) => {
-  const response = await api.delete(`/notes/${id}`);
-  return response.data;
+  const { error } = await supabase.from('notes').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  return { success: true };
 };
 
 export const markNoteAsReadApi = async (id) => {
-  const response = await api.put(`/notes/${id}/read`);
-  return response.data;
+  const { data, error } = await supabase.from('notes').update({ read: true }).eq('id', id).select().single();
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const getUnreadCountApi = async () => {
-  const response = await api.get('/notes/unread-count');
-  return response.data;
+  const { count, error } = await supabase.from('notes').select('*', { count: 'exact', head: true }).eq('read', false);
+  if (error) throw new Error(error.message);
+  return { count: count || 0 };
 };

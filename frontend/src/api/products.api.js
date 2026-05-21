@@ -1,43 +1,52 @@
-import api from './axios.config';
+import { supabase } from '../lib/supabase';
 
 // Products
 export const getProductsApi = async () => {
-  const response = await api.get('/products');
-  return response.data;
+  const { data, error } = await supabase.from('products').select('*').order('id', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const createProductApi = async (productData) => {
-  const response = await api.post('/products', productData);
-  return response.data;
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase.from('products').insert({ ...productData, user_id: user?.id }).select().single();
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const updateProductApi = async (id, productData) => {
-  const response = await api.put(`/products/${id}`, productData);
-  return response.data;
+  const { data, error } = await supabase.from('products').update(productData).eq('id', id).select().single();
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const deleteProductApi = async (id) => {
-  const response = await api.delete(`/products/${id}`);
-  return response.data;
+  const { error } = await supabase.from('products').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  return { success: true };
 };
 
 // Categories
 export const getCategoriesApi = async () => {
-  const response = await api.get('/categories');
-  return response.data;
+  const { data, error } = await supabase.from('categories').select('*').order('id', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const createCategoryApi = async (categoryData) => {
-  const response = await api.post('/categories', categoryData);
-  return response.data;
+  const { data, error } = await supabase.from('categories').insert(categoryData).select().single();
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const updateCategoryApi = async (id, categoryData) => {
-  const response = await api.put(`/categories/${id}`, categoryData);
-  return response.data;
+  const { data, error } = await supabase.from('categories').update(categoryData).eq('id', id).select().single();
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const deleteCategoryApi = async (id) => {
-  const response = await api.delete(`/categories/${id}`);
-  return response.data;
+  const { error } = await supabase.from('categories').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  return { success: true };
 };

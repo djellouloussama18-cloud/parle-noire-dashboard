@@ -1,11 +1,9 @@
-import api from './axios.config';
-
+// AI functionality requires a backend or Edge Function to keep the API key safe.
+// Since we removed the Node backend, this is mocked for now.
 export const askAiApi = async (message) => {
-  const response = await api.post('/ai/chat', { message });
-  return response.data;
+  return { reply: "ميزة الذكاء الاصطناعي تحتاج إلى إعداد Supabase Edge Functions لتجنب كشف مفتاح API." };
 };
 
 export const getAnalysisApi = async () => {
-  const response = await api.get('/ai/analysis');
-  return response.data;
+  return { analysis: "غير متوفر حالياً." };
 };

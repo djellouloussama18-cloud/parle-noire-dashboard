@@ -9,6 +9,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 
 // Pages
 import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import Sales from './pages/Sales';
 import Inventory from './pages/Inventory';
@@ -82,8 +84,10 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* Public Login */}
+        {/* Public Auth Pages */}
         <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
+        <Route path="/register" element={<ErrorBoundary><Register /></ErrorBoundary>} />
+        <Route path="/forgot-password" element={<ErrorBoundary><ForgotPassword /></ErrorBoundary>} />
 
         {/* Protected POS System */}
         <Route

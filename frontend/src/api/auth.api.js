@@ -85,3 +85,9 @@ export const resetPasswordApi = async (email, otp, newPassword) => {
   return { success: true };
 };
 
+export const changePasswordApi = async (newPassword) => {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw new Error(error.message);
+  return { success: true };
+};
+

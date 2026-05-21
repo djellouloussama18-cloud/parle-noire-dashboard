@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Dynamic Theme Variables ── */
+:root {
+  --color-accent-primary: #00FF7F;
+  --color-accent-rgb: 0, 255, 127;
+  --app-font-size: 15px;
+
+  /* Dark mode (default) */
+  --color-status-danger: #FF6B6B;
+  --color-status-warning: #FFB74D;
+  --color-status-success: #00FF7F;
+
+  --color-bg-primary: #0A0F0A;
+  --color-bg-secondary: #0D1410;
+  --color-bg-card: #111A13;
+  --color-text-primary: #E8F5E9;
+  --color-text-secondary: #7AB87A;
+  --color-text-disabled: #3D5C3D;
+  --glass-bg: rgba(17, 26, 19, 0.85);
+  --glass-border: rgba(0, 255, 127, 0.08);
+  --color-bg-subtle: rgba(0, 255, 127, 0.03);
+  --color-bg-hover: rgba(0, 255, 127, 0.06);
+  --color-bg-active: rgba(0, 255, 127, 0.12);
+  --color-bg-selected: rgba(0, 255, 127, 0.08);
+  --color-border-default: rgba(0, 255, 127, 0.15);
+  --color-border-light: rgba(0, 255, 127, 0.08);
+  --color-border-medium: rgba(0, 255, 127, 0.12);
+  --color-text-on-accent: #0A0F0A;
+  --color-text-on-warning: #0A0F0A;
+  --color-shadow-accent: rgba(var(--color-accent-rgb), 0.15);
+  --scrollbar-track: #0A0F0A;
+  --scrollbar-thumb: #111A13;
+  --color-toast-success-bg: #111A13;
+  --color-toast-error-bg: #1C0D0D;
+  --color-toast-error-text: #FFD6D6;
+  --color-toast-warning-bg: #1C150D;
+  --color-toast-warning-text: #FFEAD6;
+  --color-chart-stroke: rgba(10, 15, 10, 0.9);
+  --color-ai-user-bubble: #111A13;
+  --color-ai-bubble-bg: rgba(0,255,127,0.04);
+  --color-ai-bubble-border: rgba(0,255,127,0.06);
+  --color-tooltip-bg: #1A2B1A;
+  --color-option-bg: #0D1410;
+}
+
+html[data-theme='light'] {
+  --color-status-danger: #D32F2F;
+  --color-status-warning: #E65100;
+  --color-status-success: #2E7D32;
+
+  --color-bg-primary: #F6F8F7;
+  --color-bg-secondary: #ECF0EE;
+  --color-bg-card: #FFFFFF;
+  --color-text-primary: #1A1D1C;
+  --color-text-secondary: #5A6B62;
+  --color-text-disabled: #A0ACA6;
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --color-bg-subtle: rgba(0, 0, 0, 0.03);
+  --color-bg-hover: rgba(0, 0, 0, 0.05);
+  --color-bg-active: rgba(0, 0, 0, 0.08);
+  --color-bg-selected: rgba(0, 0, 0, 0.04);
+  --color-border-default: rgba(0, 0, 0, 0.12);
+  --color-border-light: rgba(0, 0, 0, 0.06);
+  --color-border-medium: rgba(0, 0, 0, 0.1);
+  --color-text-on-accent: #0A0F0A;
+  --color-text-on-warning: #FFFFFF;
+  --color-shadow-accent: rgba(0, 0, 0, 0.08);
+  --scrollbar-track: #E8ECEA;
+  --scrollbar-thumb: #C4CCC6;
+  --color-toast-success-bg: #E8F5E9;
+  --color-toast-error-bg: #FDE8E8;
+  --color-toast-error-text: #B91C1C;
+  --color-toast-warning-bg: #FFF3E0;
+  --color-toast-warning-text: #92400E;
+  --color-chart-stroke: rgba(0, 0, 0, 0.08);
+  --color-ai-user-bubble: #E3EBE4;
+  --color-ai-bubble-bg: rgba(0, 0, 0, 0.03);
+  --color-ai-bubble-border: rgba(0, 0, 0, 0.08);
+  --color-tooltip-bg: #F0F2F0;
+  --color-option-bg: #FFFFFF;
+}
+
+/* ── Dynamic utility classes ── */
+.text-accent-primary           { color: var(--color-accent-primary) !important; }
+.border-accent-primary         { border-color: var(--color-accent-primary) !important; }
+.bg-accent-primary             { background-color: var(--color-accent-primary) !important; }
+.ring-accent-primary           { --tw-ring-color: var(--color-accent-primary) !important; }
+.shadow-accent-primary         { --tw-shadow-color: var(--color-accent-primary) !important; }
+.focus\:border-accent-primary:focus { border-color: var(--color-accent-primary) !important; }
+.hover\:text-accent-primary:hover   { color: var(--color-accent-primary) !important; }
+.hover\:bg-accent-primary:hover     { background-color: var(--color-accent-primary) !important; }
+.fill-accent-primary           { fill: var(--color-accent-primary) !important; }
+.stroke-accent-primary         { stroke: var(--color-accent-primary) !important; }
+
+/* Theme-aware utility classes */
+.bg-subtle       { background-color: var(--color-bg-subtle) !important; }
+.bg-hover        { background-color: var(--color-bg-hover) !important; }
+.bg-active       { background-color: var(--color-bg-active) !important; }
+.bg-selected     { background-color: var(--color-bg-selected) !important; }
+.border-default  { border-color: var(--color-border-default) !important; }
+.border-light    { border-color: var(--color-border-light) !important; }
+.border-medium   { border-color: var(--color-border-medium) !important; }
+.text-on-accent  { color: var(--color-text-on-accent) !important; }
+
+.hover\:bg-hover:hover   { background-color: var(--color-bg-hover) !important; }
+.hover\:bg-active:hover   { background-color: var(--color-bg-active) !important; }
+.hover\:border-medium:hover { border-color: var(--color-border-medium) !important; }
+
+/* Apply font size globally */
+body { font-size: var(--app-font-size); }
+
+/* scrollbar */
+::-webkit-scrollbar-thumb:hover { background: var(--color-accent-primary) !important; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+
+@layer base {
+  body {
+    @apply bg-bg-primary text-text-primary font-tajawal antialiased selection:bg-accent-primary selection:text-bg-primary;
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(var(--color-accent-rgb), 0.03) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(var(--color-accent-rgb), 0.03) 0%, transparent 40%);
+  }
+
+  input, select, textarea {
+    background-color: var(--color-bg-subtle);
+    border: 1px solid var(--color-border-default);
+    @apply rounded-lg px-4 py-2 text-text-primary outline-none transition-all duration-200;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 15px var(--color-shadow-accent);
+  }
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+.glass-panel-hover {
+  @apply transition-all duration-300 hover:translate-y-[-2px];
+}
+.glass-panel-hover:hover {
+  border-color: rgba(var(--color-accent-rgb), 0.5);
+  box-shadow: 0 0 20px rgba(var(--color-accent-rgb), 0.1), 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+@media print {
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  body { background: white !important; color: black !important; }
+}

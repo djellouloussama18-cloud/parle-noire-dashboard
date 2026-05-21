@@ -1,0 +1,603 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@store.com",
+      "password_hash": "$2a$10$C5x8MLILQVnllUuz4aSYvOicdgnOcxaJ/Z7Fp9wJMZjhuRLGNbB4O",
+      "role": "admin",
+      "created_at": "2026-05-18T12:46:37.098Z",
+      "updated_at": "2026-05-20T13:41:18.777Z",
+      "last_login": "2026-05-20T13:41:18.777Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": 3,
+      "name_ar": "عطور",
+      "name_en": "Perfumes",
+      "color": "#1DB954",
+      "created_at": "2026-05-18T12:46:37.103Z",
+      "updated_at": "2026-05-18T12:46:37.103Z"
+    },
+    {
+      "id": 5,
+      "name_ar": "إكسسوارات",
+      "name_en": null,
+      "color": "#00FF7F",
+      "created_at": "2026-05-20T17:48:33.824Z",
+      "updated_at": "2026-05-20T17:48:33.824Z"
+    },
+    {
+      "id": 6,
+      "name_ar": "سلسلة",
+      "name_en": null,
+      "color": "#c800ff",
+      "icon": "Gem",
+      "created_at": "2026-05-20T18:54:42.315Z",
+      "updated_at": "2026-05-20T18:54:42.315Z"
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "name_ar": "فستان سهرة أنيق",
+      "name_en": "Elegant Evening Dress",
+      "category_id": 1,
+      "barcode": "62240726192",
+      "sku": "SKU-4072",
+      "purchase_price": 8000,
+      "sale_price": 12000,
+      "quantity": 2,
+      "min_quantity": 5,
+      "image_url": "",
+      "description": "فستان سهرة نسائي أسود مطرز أنيق",
+      "created_at": "2026-05-18T12:46:37.108Z",
+      "updated_at": "2026-05-20T17:50:17.576Z"
+    },
+    {
+      "id": 2,
+      "name_ar": "حقيبة يد جلدية ",
+      "name_en": "Luxury Leather ",
+      "category_id": 2,
+      "barcode": "62235145506",
+      "sku": "SKU-3514",
+      "purchase_price": 4500,
+      "sale_price": 600,
+      "quantity": 1,
+      "min_quantity": 4,
+      "image_url": "",
+      "description": "حقيبة يد نسائية مصنوعة من الجلد الطبيعي",
+      "created_at": "2026-05-18T12:46:37.108Z",
+      "updated_at": "2026-05-20T17:50:07.223Z"
+    },
+    {
+      "id": 4,
+      "name_ar": "يا آآ",
+      "name_en": "jbgvg",
+      "category_id": 2,
+      "barcode": "62238216637",
+      "sku": "SKU-3821",
+      "purchase_price": 44,
+      "sale_price": 666,
+      "quantity": 0,
+      "min_quantity": 6,
+      "image_url": "/uploads/product-1779291965641-3661.jpg",
+      "description": "",
+      "created_at": "2026-05-18T13:53:52.432Z",
+      "updated_at": "2026-05-20T17:49:56.314Z"
+    },
+    {
+      "id": 5,
+      "name_ar": "Cannage Motif",
+      "name_en": "Cannage Motif",
+      "category_id": 6,
+      "barcode": "62215628784",
+      "sku": "SKU-1562",
+      "purchase_price": 800,
+      "sale_price": 1700,
+      "quantity": 0,
+      "min_quantity": 5,
+      "image_url": "/uploads/product-1779291782212-4276.jpg",
+      "description": "",
+      "created_at": "2026-05-20T15:43:02.218Z",
+      "updated_at": "2026-05-20T18:59:47.943Z"
+    },
+    {
+      "id": 6,
+      "name_ar": "Messika Style",
+      "name_en": null,
+      "category_id": 4,
+      "barcode": "62244090657",
+      "sku": "SKU-4409",
+      "purchase_price": 800,
+      "sale_price": 1500,
+      "quantity": 4,
+      "min_quantity": 2,
+      "image_url": "/uploads/product-1779291910459-8957.jpg",
+      "description": "",
+      "created_at": "2026-05-20T15:45:10.475Z",
+      "updated_at": "2026-05-20T16:08:15.760Z"
+    }
+  ],
+  "sales": [
+    {
+      "id": 1,
+      "invoice_number": "INV-20260518-0001",
+      "total_amount": 16596,
+      "discount_amount": 0,
+      "tax_amount": 3153,
+      "final_amount": 19749,
+      "payment_method": "cash",
+      "amount_paid": 19749,
+      "change_amount": 0,
+      "notes": "",
+      "created_at": "2026-05-18T14:49:04.616Z",
+      "updated_at": "2026-05-18T14:49:04.616Z"
+    },
+    {
+      "id": 2,
+      "invoice_number": "INV-20260518-0002",
+      "total_amount": 6000,
+      "discount_amount": 0,
+      "tax_amount": 1140,
+      "final_amount": 7140,
+      "payment_method": "cash",
+      "amount_paid": 8000,
+      "change_amount": 860,
+      "notes": "",
+      "created_at": "2026-05-18T14:58:47.991Z",
+      "updated_at": "2026-05-18T14:58:47.991Z"
+    },
+    {
+      "id": 3,
+      "invoice_number": "INV-20260518-0003",
+      "total_amount": 12000,
+      "discount_amount": 0,
+      "tax_amount": 2280,
+      "final_amount": 14280,
+      "payment_method": "cash",
+      "amount_paid": 14280,
+      "change_amount": 0,
+      "notes": "",
+      "created_at": "2026-05-18T15:05:40.626Z",
+      "updated_at": "2026-05-18T15:05:40.626Z"
+    },
+    {
+      "id": 4,
+      "invoice_number": "INV-20260518-0004",
+      "total_amount": 666,
+      "discount_amount": 0,
+      "tax_amount": 127,
+      "final_amount": 793,
+      "payment_method": "card",
+      "amount_paid": 793,
+      "change_amount": 0,
+      "notes": "",
+      "created_at": "2026-05-18T15:10:11.852Z",
+      "updated_at": "2026-05-18T15:10:11.852Z"
+    },
+    {
+      "id": 5,
+      "invoice_number": "INV-20260518-0005",
+      "total_amount": 666,
+      "discount_amount": 0,
+      "tax_amount": 127,
+      "final_amount": 793,
+      "payment_method": "cash",
+      "amount_paid": 793,
+      "change_amount": 0,
+      "notes": "",
+      "created_at": "2026-05-18T15:33:28.130Z",
+      "updated_at": "2026-05-18T15:33:28.130Z"
+    },
+    {
+      "id": 6,
+      "invoice_number": "INV-20260518-0006",
+      "total_amount": 1332,
+      "discount_amount": 0,
+      "tax_amount": 253,
+      "final_amount": 1585,
+      "payment_method": "cash",
+      "amount_paid": 2374,
+      "change_amount": 789,
+      "notes": "",
+      "created_at": "2026-05-18T15:43:07.424Z",
+      "updated_at": "2026-05-18T15:43:07.424Z"
+    },
+    {
+      "id": 7,
+      "invoice_number": "INV-20260518-0007",
+      "total_amount": 3000,
+      "discount_amount": 0,
+      "tax_amount": 570,
+      "final_amount": 3570,
+      "payment_method": "cash",
+      "amount_paid": 19999,
+      "change_amount": 16429,
+      "notes": "",
+      "created_at": "2026-05-18T16:01:00.709Z",
+      "updated_at": "2026-05-18T16:01:00.710Z"
+    },
+    {
+      "id": 8,
+      "invoice_number": "INV-20260518-0008",
+      "total_amount": 600,
+      "discount_amount": 100,
+      "tax_amount": 95,
+      "final_amount": 595,
+      "payment_method": "card",
+      "amount_paid": 595,
+      "change_amount": 0,
+      "notes": "",
+      "created_at": "2026-05-18T16:05:31.395Z",
+      "updated_at": "2026-05-18T16:05:31.395Z"
+    },
+    {
+      "id": 9,
+      "invoice_number": "INV-20260520-0009",
+      "total_amount": 8398,
+      "discount_amount": 0,
+      "tax_amount": 1596,
+      "final_amount": 9994,
+      "payment_method": "card",
+      "amount_paid": 9994,
+      "change_amount": 0,
+      "notes": "",
+      "created_at": "2026-05-20T15:46:49.238Z",
+      "updated_at": "2026-05-20T15:46:49.238Z"
+    },
+    {
+      "id": 10,
+      "invoice_number": "INV-20260520-0010",
+      "total_amount": 666,
+      "discount_amount": 0,
+      "tax_amount": 127,
+      "final_amount": 793,
+      "payment_method": "card",
+      "amount_paid": 793,
+      "change_amount": 0,
+      "notes": "",
+      "created_at": "2026-05-20T16:04:05.744Z",
+      "updated_at": "2026-05-20T16:04:05.744Z"
+    },
+    {
+      "id": 11,
+      "invoice_number": "INV-20260520-0011",
+      "total_amount": 10656,
+      "discount_amount": 0,
+      "tax_amount": 2025,
+      "final_amount": 12681,
+      "payment_method": "card",
+      "amount_paid": 12681,
+      "change_amount": 0,
+      "notes": "",
+      "created_at": "2026-05-20T16:04:30.183Z",
+      "updated_at": "2026-05-20T16:04:30.183Z"
+    },
+    {
+      "id": 12,
+      "invoice_number": "INV-20260520-0012",
+      "total_amount": 1700,
+      "discount_amount": 0,
+      "tax_amount": 323,
+      "final_amount": 2023,
+      "payment_method": "card",
+      "amount_paid": 2023,
+      "change_amount": 0,
+      "notes": "",
+      "created_at": "2026-05-20T18:59:47.931Z",
+      "updated_at": "2026-05-20T18:59:47.931Z"
+    }
+  ],
+  "sale_items": [
+    {
+      "id": 1,
+      "sale_id": 1,
+      "product_id": 4,
+      "product_name": "يا آآ",
+      "quantity": 6,
+      "unit_price": 666,
+      "total_price": 3996,
+      "created_at": "2026-05-18T14:49:04.618Z",
+      "updated_at": "2026-05-18T14:49:04.618Z"
+    },
+    {
+      "id": 2,
+      "sale_id": 1,
+      "product_id": 2,
+      "product_name": "حقيبة يد جلدية ",
+      "quantity": 1,
+      "unit_price": 600,
+      "total_price": 600,
+      "created_at": "2026-05-18T14:49:04.623Z",
+      "updated_at": "2026-05-18T14:49:04.623Z"
+    },
+    {
+      "id": 3,
+      "sale_id": 1,
+      "product_id": 1,
+      "product_name": "فستان سهرة أنيق",
+      "quantity": 1,
+      "unit_price": 12000,
+      "total_price": 12000,
+      "created_at": "2026-05-18T14:49:04.627Z",
+      "updated_at": "2026-05-18T14:49:04.627Z"
+    },
+    {
+      "id": 4,
+      "sale_id": 2,
+      "product_id": 2,
+      "product_name": "حقيبة يد جلدية ",
+      "quantity": 10,
+      "unit_price": 600,
+      "total_price": 6000,
+      "created_at": "2026-05-18T14:58:47.992Z",
+      "updated_at": "2026-05-18T14:58:47.992Z"
+    },
+    {
+      "id": 5,
+      "sale_id": 3,
+      "product_id": 1,
+      "product_name": "فستان سهرة أنيق",
+      "quantity": 1,
+      "unit_price": 12000,
+      "total_price": 12000,
+      "created_at": "2026-05-18T15:05:40.629Z",
+      "updated_at": "2026-05-18T15:05:40.629Z"
+    },
+    {
+      "id": 6,
+      "sale_id": 4,
+      "product_id": 4,
+      "product_name": "يا آآ",
+      "quantity": 1,
+      "unit_price": 666,
+      "total_price": 666,
+      "created_at": "2026-05-18T15:10:11.854Z",
+      "updated_at": "2026-05-18T15:10:11.854Z"
+    },
+    {
+      "id": 7,
+      "sale_id": 5,
+      "product_id": 4,
+      "product_name": "يا آآ",
+      "quantity": 1,
+      "unit_price": 666,
+      "total_price": 666,
+      "created_at": "2026-05-18T15:33:28.135Z",
+      "updated_at": "2026-05-18T15:33:28.135Z"
+    },
+    {
+      "id": 8,
+      "sale_id": 6,
+      "product_id": 4,
+      "product_name": "يا آآ",
+      "quantity": 2,
+      "unit_price": 666,
+      "total_price": 1332,
+      "created_at": "2026-05-18T15:43:07.427Z",
+      "updated_at": "2026-05-18T15:43:07.427Z"
+    },
+    {
+      "id": 9,
+      "sale_id": 7,
+      "product_id": 2,
+      "product_name": "حقيبة يد جلدية ",
+      "quantity": 5,
+      "unit_price": 600,
+      "total_price": 3000,
+      "created_at": "2026-05-18T16:01:00.714Z",
+      "updated_at": "2026-05-18T16:01:00.714Z"
+    },
+    {
+      "id": 10,
+      "sale_id": 8,
+      "product_id": 2,
+      "product_name": "حقيبة يد جلدية ",
+      "quantity": 1,
+      "unit_price": 600,
+      "total_price": 600,
+      "created_at": "2026-05-18T16:05:31.399Z",
+      "updated_at": "2026-05-18T16:05:31.399Z"
+    },
+    {
+      "id": 11,
+      "sale_id": 9,
+      "product_id": 6,
+      "product_name": "Messika Style",
+      "quantity": 2,
+      "unit_price": 1500,
+      "total_price": 3000,
+      "created_at": "2026-05-20T15:46:49.241Z",
+      "updated_at": "2026-05-20T15:46:49.241Z"
+    },
+    {
+      "id": 12,
+      "sale_id": 9,
+      "product_id": 5,
+      "product_name": "Cannage Motif",
+      "quantity": 2,
+      "unit_price": 1700,
+      "total_price": 3400,
+      "created_at": "2026-05-20T15:46:49.247Z",
+      "updated_at": "2026-05-20T15:46:49.247Z"
+    },
+    {
+      "id": 13,
+      "sale_id": 9,
+      "product_id": 4,
+      "product_name": "يا آآ",
+      "quantity": 3,
+      "unit_price": 666,
+      "total_price": 1998,
+      "created_at": "2026-05-20T15:46:49.255Z",
+      "updated_at": "2026-05-20T15:46:49.255Z"
+    },
+    {
+      "id": 14,
+      "sale_id": 10,
+      "product_id": 4,
+      "product_name": "يا آآ",
+      "quantity": 1,
+      "unit_price": 666,
+      "total_price": 666,
+      "created_at": "2026-05-20T16:04:05.746Z",
+      "updated_at": "2026-05-20T16:04:05.746Z"
+    },
+    {
+      "id": 15,
+      "sale_id": 11,
+      "product_id": 4,
+      "product_name": "يا آآ",
+      "quantity": 16,
+      "unit_price": 666,
+      "total_price": 10656,
+      "created_at": "2026-05-20T16:04:30.185Z",
+      "updated_at": "2026-05-20T16:04:30.185Z"
+    },
+    {
+      "id": 16,
+      "sale_id": 12,
+      "product_id": 5,
+      "product_name": "Cannage Motif",
+      "quantity": 1,
+      "unit_price": 1700,
+      "total_price": 1700,
+      "created_at": "2026-05-20T18:59:47.935Z",
+      "updated_at": "2026-05-20T18:59:47.936Z"
+    }
+  ],
+  "settings": [
+    {
+      "id": 1,
+      "key": "store_name",
+      "value": "PARLE NOIRE ",
+      "created_at": "2026-05-18T12:46:37.103Z",
+      "updated_at": "2026-05-20T18:42:19.776Z"
+    },
+    {
+      "id": 2,
+      "key": "store_address",
+      "value": "السطيف -بئر العرش",
+      "created_at": "2026-05-18T12:46:37.104Z",
+      "updated_at": "2026-05-20T18:42:19.787Z"
+    },
+    {
+      "id": 3,
+      "key": "store_phone",
+      "value": "0555123456",
+      "created_at": "2026-05-18T12:46:37.105Z",
+      "updated_at": "2026-05-20T18:42:19.791Z"
+    },
+    {
+      "id": 4,
+      "key": "currency",
+      "value": "د.ج",
+      "created_at": "2026-05-18T12:46:37.106Z",
+      "updated_at": "2026-05-20T18:42:19.793Z"
+    },
+    {
+      "id": 5,
+      "key": "tva_rate",
+      "value": "0",
+      "created_at": "2026-05-18T12:46:37.107Z",
+      "updated_at": "2026-05-20T18:42:19.800Z"
+    },
+    {
+      "id": 6,
+      "key": "receipt_header",
+      "value": "أهلاً بكم في متجر parle noir",
+      "created_at": "2026-05-18T13:56:53.737Z",
+      "updated_at": "2026-05-20T18:42:19.804Z"
+    },
+    {
+      "id": 7,
+      "key": "receipt_footer",
+      "value": "شكراً لزيارتكم! ",
+      "created_at": "2026-05-18T13:56:53.738Z",
+      "updated_at": "2026-05-20T18:42:19.805Z"
+    },
+    {
+      "id": 8,
+      "key": "receipt_show_sku",
+      "value": "true",
+      "created_at": "2026-05-18T13:56:53.740Z",
+      "updated_at": "2026-05-20T18:42:19.808Z"
+    },
+    {
+      "id": 9,
+      "key": "receipt_show_price",
+      "value": "true",
+      "created_at": "2026-05-18T13:56:53.742Z",
+      "updated_at": "2026-05-20T18:42:19.809Z"
+    },
+    {
+      "id": 10,
+      "key": "receipt_show_tva",
+      "value": "true",
+      "created_at": "2026-05-18T13:56:53.742Z",
+      "updated_at": "2026-05-20T18:42:19.815Z"
+    },
+    {
+      "id": 11,
+      "key": "receipt_show_qrcode",
+      "value": "true",
+      "created_at": "2026-05-18T13:56:53.743Z",
+      "updated_at": "2026-05-20T18:42:19.818Z"
+    }
+  ],
+  "backups": [],
+  "customers": [
+    {
+      "id": 1,
+      "name": "naim",
+      "phone": "079854245",
+      "email": "YTFGYCHVYT@gmail.com",
+      "address": "",
+      "total_purchases": 0,
+      "created_at": "2026-05-18T15:52:28.150Z",
+      "updated_at": "2026-05-18T15:52:28.150Z"
+    }
+  ],
+  "notes": [
+    {
+      "id": 1,
+      "type": "system",
+      "title": "المنتج \"Cannage Motif\" نفد من المخزون",
+      "content": "المنتج Cannage Motif (SKU-1562) في قسم \"إكسسوارات\" نفد تماماً. الكمية الحالية: 0. يُرجى إعادة الطلب فوراً.",
+      "priority": "high",
+      "product_id": 5,
+      "read": 0,
+      "created_by": null,
+      "created_at": "2026-05-20T16:25:23.248Z",
+      "updated_at": "2026-05-20T16:25:23.250Z"
+    },
+    {
+      "id": 2,
+      "type": "merchant",
+      "title": "stock",
+      "content": "efefcdcdeffrffv",
+      "priority": "low",
+      "product_id": null,
+      "reminder_date": null,
+      "read": 1,
+      "created_by": 1,
+      "created_at": "2026-05-20T16:36:30.120Z",
+      "updated_at": "2026-05-20T16:36:55.750Z"
+    },
+    {
+      "id": 3,
+      "type": "merchant",
+      "title": "knbhfvfbvc",
+      "content": "njjdcudcydfgcvfgvcfjhvfjgvfbchdcfvjdcdncbdchdcbfhjhcjbcvbchbdhbv hsbdc vhdhb  bc cvch bbcdhvghucb vfukedvbvhgfrgfbvegjv",
+      "priority": "high",
+      "product_id": null,
+      "reminder_date": null,
+      "read": 1,
+      "created_by": 1,
+      "created_at": "2026-05-20T17:23:47.531Z",
+      "updated_at": "2026-05-20T17:23:52.635Z"
+    }
+  ]
+}

@@ -17,7 +17,8 @@ import {
   Shirt,
   Menu,
   Users,
-  StickyNote
+  StickyNote,
+  Trophy
 } from 'lucide-react';
 
 export default function Sidebar({ isExpanded, setIsExpanded }) {
@@ -59,6 +60,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     { path: '/barcode', label: isEn ? 'Barcode' : 'الباركود', icon: QrCode },
     { path: '/print', label: isEn ? 'Printing' : 'الطباعة', icon: Printer },
     { path: '/notes', label: isEn ? 'Notes' : 'الملاحظات', icon: StickyNote, alert: unreadNotes > 0 ? unreadNotes : null },
+    { path: '/tournaments', label: isEn ? 'Tournaments' : 'البطولات', icon: Trophy },
     { path: '/settings', label: isEn ? 'Settings' : 'الإعدادات', icon: Settings },
   ];
 

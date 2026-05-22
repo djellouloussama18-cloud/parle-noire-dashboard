@@ -59,6 +59,9 @@ import Print from './pages/Print';
 import Settings from './pages/Settings';
 import Customers from './pages/Customers';
 import Notes from './pages/Notes';
+import TournamentFeedScreen from './screens/Tournaments/TournamentFeedScreen';
+import TournamentDetailScreen from './screens/Tournaments/TournamentDetailScreen';
+import CreateTournamentScreen from './screens/Organizer/CreateTournamentScreen';
 
 // Protected Route Guard
 function ProtectedRoute({ children }) {
@@ -214,6 +217,38 @@ export default function App() {
             <ProtectedRoute>
               <MainLayout>
                 <Notes />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Tournament Screens */}
+        <Route
+          path="/tournaments"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <TournamentFeedScreen />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tournaments/:id"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <TournamentDetailScreen />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/organizer/create"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <CreateTournamentScreen />
               </MainLayout>
             </ProtectedRoute>
           }

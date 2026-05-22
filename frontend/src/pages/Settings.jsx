@@ -84,6 +84,22 @@ export default function Settings() {
     e.preventDefault();
     try {
       await updateSettings(storeData);
+      // Re-read fresh values from store to avoid stale closure references
+      const fresh = useSettingsStore.getState().settings;
+      setStoreData({
+        store_name: fresh.store_name || '',
+        store_address: fresh.store_address || '',
+        store_phone: fresh.store_phone || '',
+        currency: fresh.currency || '',
+        tva_rate: fresh.tva_rate || '',
+        receipt_header: fresh.receipt_header || '',
+        receipt_footer: fresh.receipt_footer || '',
+        receipt_show_sku: fresh.receipt_show_sku ?? true,
+        receipt_show_price: fresh.receipt_show_price ?? true,
+        receipt_show_tva: fresh.receipt_show_tva ?? true,
+        receipt_show_qrcode: fresh.receipt_show_qrcode ?? true,
+      });
+      if (fresh.store_logo) setLogoUrl(fresh.store_logo);
       showSuccess(isEn ? 'Store details updated successfully!' : 'تم تحديث معلومات المتجر بنجاح!');
     } catch (err) {
       showError(isEn ? 'Failed to update store details' : 'فشل تحديث البيانات');

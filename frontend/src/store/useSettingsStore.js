@@ -99,9 +99,7 @@ const useSettingsStore = create(
           if (error) throw error;
 
           const flat = {};
-          const raw = {};
           (data || []).forEach(({ key, value }) => {
-            raw[key] = value;
             if (key === 'store_name')          flat.storeName = value;
             if (key === 'store_phone')         flat.storePhone = value;
             if (key === 'store_address')       flat.storeAddress = value;
@@ -117,28 +115,11 @@ const useSettingsStore = create(
             if (key === 'receipt_show_qrcode') flat.receiptShowQrcode = value === 'true';
           });
 
-          // Build the settings object directly from the raw fetched data,
-          // not from get() which may be stale.
-          const settingsFromDb = {
-            store_name:          raw.store_name          ?? get().settings.store_name,
-            store_address:       raw.store_address       ?? get().settings.store_address,
-            store_phone:         raw.store_phone         ?? get().settings.store_phone,
-            currency:            raw.currency            ?? get().settings.currency,
-            tva_rate:            raw.tva_rate            ?? get().settings.tva_rate,
-            store_logo:          raw.store_logo          ?? get().settings.store_logo,
-            receipt_header:      raw.receipt_header      ?? get().settings.receipt_header,
-            receipt_footer:      raw.receipt_footer      ?? get().settings.receipt_footer,
-            receipt_show_sku:    raw.receipt_show_sku    === 'true' ? true : raw.receipt_show_sku === 'false' ? false : get().settings.receipt_show_sku,
-            receipt_show_price:  raw.receipt_show_price  === 'true' ? true : raw.receipt_show_price === 'false' ? false : get().settings.receipt_show_price,
-            receipt_show_tva:    raw.receipt_show_tva    === 'true' ? true : raw.receipt_show_tva === 'false' ? false : get().settings.receipt_show_tva,
-            receipt_show_qrcode: raw.receipt_show_qrcode === 'true' ? true : raw.receipt_show_qrcode === 'false' ? false : get().settings.receipt_show_qrcode,
-          };
+          // First set(): flush raw mapped flat fields into state
+          set({ ...flat, isLoaded: true });
 
-          set({
-            ...flat,
-            settings: settingsFromDb,
-            isLoaded: true
-          });
+          // Second set(): now that flat state is fresh, build settings from it
+          set({ settings: get()._buildSettings() });
         } catch (err) {
           console.error('Failed to load settings:', err);
         }
@@ -196,35 +177,6 @@ const useSettingsStore = create(
       updateSettings: async (newSettings) => {
         set({ isLoading: true });
         try {
-          // Map DB column keys → flat state keys for local update
-          const flatUpdate = {};
-          const dbColumnToFlat = {
-            store_name:          'storeName',
-            store_phone:         'storePhone',
-            store_address:       'storeAddress',
-            store_email:         'storeEmail',
-            currency:            'currency',
-            tva_rate:            'tvaRate',
-            store_logo:          'logoUrl',
-            receipt_header:      'receiptHeader',
-            receipt_footer:      'receiptFooter',
-            receipt_show_sku:    'receiptShowSku',
-            receipt_show_price:  'receiptShowPrice',
-            receipt_show_tva:    'receiptShowTva',
-            receipt_show_qrcode: 'receiptShowQrcode',
-          };
-          for (const [dbKey, val] of Object.entries(newSettings)) {
-            const flatKey = dbColumnToFlat[dbKey];
-            if (flatKey) flatUpdate[flatKey] = val;
-          }
-
-          // Apply to flat state immediately
-          set({ ...flatUpdate });
-
-          // Rebuild the settings object from the updated flat state
-          const merged = { ...get()._buildSettings() };
-          set({ settings: merged });
-
           // Persist to Supabase using upsert
           for (const [key, value] of Object.entries(newSettings)) {
             await supabase.from('settings').upsert(
@@ -233,10 +185,12 @@ const useSettingsStore = create(
             );
           }
 
-          // Re-sync from DB to confirm everything matches
+          // Re-sync from DB to get the authoritative state
           await get().loadSettings(true);
 
-          set({ isLoading: false });
+          // Use get() to read the latest flat state, then merge newSettings on top
+          const merged = { ...get()._buildSettings(), ...newSettings };
+          set({ settings: merged, isLoading: false });
           return true;
         } catch (err) {
           console.error('Failed to update settings:', err);

@@ -271,12 +271,21 @@ export default function Sales() {
       };
 
       const result = await createSaleApi({
-        items: items.map(it => ({ product_id: it.product.id, quantity: it.quantity, unit_price: it.product.sale_price })),
-        discount_amount: discountAmount,
-        tax_amount: getTaxAmount(),
+        items: items.map(it => ({ 
+          product_id: it.product.id, 
+          quantity: it.quantity, 
+          unit_price: it.product.sale_price,
+          total_price: it.quantity * it.product.sale_price,
+          product_name: it.product.name_ar || it.product.name_en || ''
+        })),
+        total_amount: getSubtotal(),
+        discount_amount: discountAmount || 0,
+        tax_amount: getTaxAmount() || 0,
+        final_amount: getFinalTotal(),
         payment_method: paymentMethod,
         amount_paid: amountPaid || total,
-        notes
+        change_amount: getChangeAmount() || 0,
+        notes: notes || ''
       });
 
       setSavedItems(cartSnapshot);

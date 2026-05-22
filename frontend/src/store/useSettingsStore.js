@@ -97,6 +97,12 @@ const useSettingsStore = create((set, get) => ({
     localStorage.setItem('pos_language', lang);
   },
 
+  setLogo: (url) => {
+    set(state => ({ settings: { ...state.settings, store_logo: url } }));
+    const merged = { ...get().settings, store_logo: url };
+    localStorage.setItem('pos_settings', JSON.stringify(merged));
+  },
+
   loadLocalPreferences: () => {
     try {
       const local = localStorage.getItem('pos_settings');

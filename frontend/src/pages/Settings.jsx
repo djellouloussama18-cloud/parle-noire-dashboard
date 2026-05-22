@@ -94,6 +94,7 @@ export default function Settings() {
     try {
       const publicUrl = await uploadLogoApi(file);
       await updateSettingApi('store_logo', publicUrl);
+      useSettingsStore.getState().setLogo(publicUrl);
       setLogoUrl(publicUrl);
       showSuccess('تم رفع شعار المتجر بنجاح ✓');
     } catch (err) {

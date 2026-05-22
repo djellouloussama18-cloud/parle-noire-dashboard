@@ -78,7 +78,7 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
-  const { accentColor, fontSize, themeMode, language, loadLocalPreferences, fetchSettings } = useSettingsStore();
+  const { accentColor, fontSize, themeMode, language, loadLocalPreferences, fetchSettings, loadSettings } = useSettingsStore();
   const token = useAuthStore((state) => state.token);
   const isLoginPage = window.location.pathname === '/login';
 
@@ -88,6 +88,7 @@ export default function App() {
     // Only fetch settings from backend if authenticated and not on login page
     if (token && !isLoginPage) {
       fetchSettings();
+      loadSettings();
     }
   }, []);
 

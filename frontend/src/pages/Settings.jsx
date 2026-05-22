@@ -87,19 +87,26 @@ export default function Settings() {
     const file = e.target.files[0];
     if (!file) return;
 
-    const localPreview = URL.createObjectURL(file);
-    setLogoPreview(localPreview);
+    // Optimistic: show local preview instantly with zero latency
+    const localBlobUrl = URL.createObjectURL(file);
+    setLogoPreview(localBlobUrl);
     setIsUploadingLogo(true);
 
     try {
       const publicUrl = await uploadLogoApi(file);
-      await updateSettingApi('store_logo', publicUrl);
-      useSettingsStore.getState().setLogo(publicUrl);
-      setLogoUrl(publicUrl);
+      // Cache busting: append timestamp to force browser to fetch fresh image
+      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
+      await updateSettingApi('store_logo', cacheBustedUrl);
+      useSettingsStore.getState().setLogo(cacheBustedUrl);
+      // Transition from blob preview to real cached-broken URL
+      setLogoUrl(cacheBustedUrl);
+      setLogoPreview(null);
+      URL.revokeObjectURL(localBlobUrl);
       showSuccess('تم رفع شعار المتجر بنجاح ✓');
     } catch (err) {
       showError('فشل رفع الشعار: ' + err.message);
       setLogoPreview(null);
+      URL.revokeObjectURL(localBlobUrl);
     } finally {
       setIsUploadingLogo(false);
     }

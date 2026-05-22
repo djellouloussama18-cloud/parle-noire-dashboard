@@ -93,13 +93,11 @@ export default function Settings() {
     setIsUploadingLogo(true);
 
     try {
+      // Upload and get the clean public URL (no cache-buster in DB)
       const publicUrl = await uploadLogoApi(file);
-      // Cache busting: append timestamp to force browser to fetch fresh image
-      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
-      await updateSettingApi('store_logo', cacheBustedUrl);
-      useSettingsStore.getState().setLogo(cacheBustedUrl);
-      // Transition from blob preview to real cached-broken URL
-      setLogoUrl(cacheBustedUrl);
+      await updateSettingApi('store_logo', publicUrl);
+      useSettingsStore.getState().setLogo(publicUrl);
+      setLogoUrl(publicUrl);
       setLogoPreview(null);
       URL.revokeObjectURL(localBlobUrl);
       showSuccess('تم رفع شعار المتجر بنجاح ✓');
@@ -374,7 +372,7 @@ export default function Settings() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {(logoPreview || logoUrl) && (
                     <img
-                      src={logoPreview || logoUrl}
+                      src={logoPreview || `${logoUrl}?t=${Date.now()}`}
                       alt="شعار المتجر"
                       style={{
                         width: '100px', height: '100px',

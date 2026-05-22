@@ -29,8 +29,7 @@ export const uploadLogoApi = async (file) => {
 export const updateSettingApi = async (key, value) => {
   const { error } = await supabase
     .from('settings')
-    .update({ value: String(value) })
-    .eq('key', key);
+    .upsert({ key, value: String(value) }, { onConflict: 'key' });
 
   if (error) throw new Error(error.message);
   return true;

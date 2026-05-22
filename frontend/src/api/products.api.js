@@ -15,7 +15,12 @@ export const createProductApi = async (productData) => {
 };
 
 export const updateProductApi = async (id, productData) => {
-  const { data, error } = await supabase.from('products').update(productData).eq('id', id).select().single();
+  const { data, error } = await supabase
+    .from('products')
+    .update(productData)
+    .eq('id', id)
+    .select()
+    .single();
   if (error) throw new Error(error.message);
   return data;
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useInventoryStore from '../store/useInventoryStore';
+import { updateProductApi } from '../api/products.api';
 import useSettingsStore from '../store/useSettingsStore';
 import useNotification from '../hooks/useNotification';
 import formatCurrency from '../utils/formatCurrency';
@@ -229,7 +230,10 @@ export default function Inventory() {
     if (Object.keys(errors).length > 0) return;
 
     const payload = {
-      ...formData,
+      name_ar: formData.name_ar.trim(),
+      name_en: formData.name_en?.trim() || '',
+      sku: formData.sku.trim(),
+      barcode: formData.barcode.trim(),
       purchase_price: parseFloat(formData.purchase_price || 0),
       sale_price: parseFloat(formData.sale_price),
       quantity: parseInt(formData.quantity || 0, 10),
@@ -237,17 +241,35 @@ export default function Inventory() {
       category_id: parseInt(formData.category_id, 10)
     };
 
-    try {
-      if (editingId) {
-        await updateProduct(editingId, payload);
-        showSuccess(isEn ? 'Product updated successfully!' : 'تم تعديل المنتج في المخزن بنجاح!');
-      } else {
-        await addProduct(payload);
-        showSuccess(isEn ? 'New product added successfully!' : 'تمت إضافة المنتج الجديد للمخزن!');
-      }
+    if (editingId) {
       setIsModalOpen(false);
-    } catch (err) {
-      showError(err.message || (isEn ? 'Failed to save product' : 'فشل حفظ المنتج'));
+      const originalProduct = products.find(p => p.id === editingId);
+      useInventoryStore.setState(state => ({
+        products: state.products.map(p =>
+          p.id === editingId ? { ...p, ...payload } : p
+        )
+      }));
+      try {
+        const apiPayload = { ...payload };
+        const imageChanged = formData.image_url !== originalProduct?.image_url;
+        if (imageChanged && formData.image_url) {
+          apiPayload.image_url = formData.image_url;
+        }
+        await updateProductApi(editingId, apiPayload);
+        showSuccess(isEn ? 'Product updated successfully!' : 'تم تعديل المنتج في المخزن بنجاح!');
+      } catch (err) {
+        showError(err.message || (isEn ? 'Failed to save product' : 'فشل حفظ المنتج'));
+        fetchProducts();
+      }
+    } else {
+      try {
+        const addPayload = { ...payload, image_url: formData.image_url || null };
+        await addProduct(addPayload);
+        showSuccess(isEn ? 'New product added successfully!' : 'تمت إضافة المنتج الجديد للمخزن!');
+        setIsModalOpen(false);
+      } catch (err) {
+        showError(err.message || (isEn ? 'Failed to save product' : 'فشل حفظ المنتج'));
+      }
     }
   };
 

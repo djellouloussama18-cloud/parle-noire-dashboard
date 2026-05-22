@@ -54,6 +54,25 @@ const useSettingsStore = create(
         });
       },
 
+      // Build the full settings object from flat state + receipt fields
+      _buildSettings: () => {
+        const state = get();
+        return {
+          store_name: state.storeName,
+          store_address: state.storeAddress,
+          store_phone: state.storePhone,
+          currency: state.currency,
+          tva_rate: String(state.tvaRate),
+          store_logo: state.logoUrl,
+          receipt_header: state.receipt_header || '',
+          receipt_footer: state.receipt_footer || '',
+          receipt_show_sku: state.receipt_show_sku ?? true,
+          receipt_show_price: state.receipt_show_price ?? true,
+          receipt_show_tva: state.receipt_show_tva ?? true,
+          receipt_show_qrcode: state.receipt_show_qrcode ?? true,
+        };
+      },
+
       // ── New Actions ────────────────────────────────────────────────
 
       setLogo: (url) => {
@@ -61,8 +80,8 @@ const useSettingsStore = create(
         get()._syncSettings();
       },
 
-      loadSettings: async () => {
-        if (get().isLoaded) return;
+      loadSettings: async (force = false) => {
+        if (get().isLoaded && !force) return;
         try {
           const { data, error } = await supabase.from('settings').select('key, value');
           if (error) throw error;
@@ -84,8 +103,11 @@ const useSettingsStore = create(
             if (key === 'receipt_show_qrcode') s.receipt_show_qrcode = value === 'true';
           });
 
-          set({ ...s, isLoaded: true });
-          get()._syncSettings();
+          set({
+            ...s,
+            settings: get()._buildSettings(),
+            isLoaded: true
+          });
         } catch (err) {
           console.error('Failed to load settings:', err);
         }
@@ -120,7 +142,6 @@ const useSettingsStore = create(
       fetchSettings: async () => {
         set({ isLoading: true });
         try {
-          get().loadLocalPreferences();
           const { data: serverSettingsArray, error } = await supabase.from('settings').select('*');
           if (error) throw error;
 
@@ -132,9 +153,9 @@ const useSettingsStore = create(
             if (serverSettings[key] === 'false') serverSettings[key] = false;
           });
 
-          const merged = { ...get().settings, ...serverSettings };
+          const merged = get()._buildSettings();
+          Object.assign(merged, serverSettings);
           set({ settings: merged, isLoading: false });
-          get()._syncSettings();
         } catch (err) {
           console.error('Failed to fetch settings:', err);
           set({ isLoading: false });
@@ -152,9 +173,9 @@ const useSettingsStore = create(
             );
           }
 
-          const merged = { ...get().settings, ...newSettings };
+          // Merge the new settings into a fresh baseline from flat state
+          const merged = { ...get()._buildSettings(), ...newSettings };
           set({ settings: merged, isLoading: false });
-          get()._syncSettings();
           return true;
         } catch (err) {
           console.error('Failed to update settings:', err);

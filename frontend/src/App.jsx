@@ -78,17 +78,14 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
-  const { accentColor, fontSize, themeMode, language, loadLocalPreferences, fetchSettings, loadSettings } = useSettingsStore();
+  const { accentColor, fontSize, themeMode, language, loadSettings } = useSettingsStore();
   const token = useAuthStore((state) => state.token);
   const isLoginPage = window.location.pathname === '/login';
 
   // Apply theme to CSS variables on mount and whenever they change
   useEffect(() => {
-    loadLocalPreferences();
-    // Only fetch settings from backend if authenticated and not on login page
     if (token && !isLoginPage) {
-      fetchSettings();
-      loadSettings();
+      loadSettings(true);
     }
   }, []);
 

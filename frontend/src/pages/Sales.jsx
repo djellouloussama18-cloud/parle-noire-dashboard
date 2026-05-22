@@ -287,7 +287,10 @@ export default function Sales() {
       clearCart();
       fetchProducts();
     } catch (err) {
-      showError(err.response?.data?.message || (isEn ? 'Failed to complete sale' : 'فشل إتمام عملية البيع'));
+      console.error('=== CHECKOUT ERROR ===');
+      console.error('Error message:', err.message);
+      console.error('Error details:', err);
+      showError(err.message || (isEn ? 'Failed to complete sale' : 'فشل إتمام عملية البيع'));
     } finally { setIsSubmitting(false); }
   };
 

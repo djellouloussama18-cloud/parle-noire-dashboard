@@ -5,6 +5,7 @@ import useNotification from '../hooks/useNotification';
 import { checkPasswordStrength } from '../utils/validators';
 import { getBackupsApi, triggerBackupApi, downloadBackupApi } from '../api/reports.api';
 import { sendChangePasswordOTPApi } from '../api/auth.api';
+import { uploadLogoApi, updateSettingApi } from '../api/settings.api';
 import {
   Store,
   Lock,
@@ -45,7 +46,7 @@ export default function Settings() {
     receipt_show_tva: true,
     receipt_show_qrcode: true
   });
-  const [logoFile, setLogoFile] = useState(null);
+  const [logoUrl, setLogoUrl] = useState('');
   const [logoPreview, setLogoPreview] = useState(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
@@ -68,6 +69,7 @@ export default function Settings() {
         receipt_show_tva: settings.receipt_show_tva ?? true,
         receipt_show_qrcode: settings.receipt_show_qrcode ?? true
       });
+      if (settings.store_logo) setLogoUrl(settings.store_logo);
     }
   }, [settings]);
 
@@ -81,33 +83,22 @@ export default function Settings() {
     }
   };
 
-  const handleLogoChange = (e) => {
+  const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      showWarning(isEn ? 'Only image files are allowed' : 'يسمح فقط بملفات الصور');
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      showWarning(isEn ? 'File size must be less than 2MB' : 'حجم الملف يجب أن لا يتجاوز 2 ميغابايت');
-      return;
-    }
-    setLogoFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setLogoPreview(reader.result);
-    reader.readAsDataURL(file);
-  };
 
-  const handleUploadLogo = async () => {
-    if (!logoFile) return;
+    const localPreview = URL.createObjectURL(file);
+    setLogoPreview(localPreview);
     setIsUploadingLogo(true);
+
     try {
-      await useSettingsStore.getState().uploadLogo(logoFile);
-      showSuccess(isEn ? 'Logo uploaded successfully!' : 'تم رفع شعار المتجر بنجاح!');
-      setLogoFile(null);
+      const publicUrl = await uploadLogoApi(file);
+      await updateSettingApi('store_logo', publicUrl);
+      setLogoUrl(publicUrl);
+      showSuccess('تم رفع شعار المتجر بنجاح ✓');
+    } catch (err) {
+      showError('فشل رفع الشعار: ' + err.message);
       setLogoPreview(null);
-    } catch {
-      showError(isEn ? 'Failed to upload logo' : 'فشل رفع الشعار');
     } finally {
       setIsUploadingLogo(false);
     }
@@ -372,47 +363,45 @@ export default function Settings() {
                 <h4 className={`text-xs font-bold text-text-secondary mb-3 ${isEn ? 'text-left' : ''}`}>
                   {isEn ? 'Store Logo' : 'شعار المتجر'}
                 </h4>
-                <div className={`flex items-center gap-4 ${isEn ? 'flex-row-reverse' : ''}`}>
-                  <div className="w-20 h-20 rounded-2xl overflow-hidden bg-subtle border border-default flex items-center justify-center flex-shrink-0">
-                    {logoPreview || settings.store_logo ? (
-                      <img
-                        src={logoPreview || settings.store_logo}
-                        alt="Store Logo"
-                        className="w-full h-full object-contain p-1"
-                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
-                      />
-                    ) : null}
-                    <div className={`w-full h-full ${settings.store_logo || logoPreview ? 'hidden' : 'flex'} items-center justify-center`}>
-                      <Store className="w-8 h-8 text-text-disabled" />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 flex-1">
-                    <label className="flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-xl border border-default bg-subtle hover:bg-hover hover:border-accent-primary/40 transition-all text-xs font-bold text-text-secondary">
-                      <Upload className="w-4 h-4 text-accent-primary" />
-                      {isEn ? 'Choose Logo Image' : 'اختر صورة الشعار'}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        className="hidden"
-                      />
-                    </label>
-                    <span className="text-[10px] text-text-disabled">
-                      {isEn ? 'PNG, JPG — max 2MB' : 'PNG، JPG — حد أقصى 2 ميغابايت'}
-                    </span>
-                  </div>
-
-                  {logoPreview && (
-                    <Button
-                      onClick={handleUploadLogo}
-                      variant="primary"
-                      isLoading={isUploadingLogo}
-                      className="h-11 text-xs font-bold whitespace-nowrap"
-                    >
-                      {isEn ? 'Upload' : 'رفع الشعار'}
-                    </Button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {(logoPreview || logoUrl) && (
+                    <img
+                      src={logoPreview || logoUrl}
+                      alt="شعار المتجر"
+                      style={{
+                        width: '100px', height: '100px',
+                        objectFit: 'contain', borderRadius: '12px',
+                        border: '2px solid #eee'
+                      }}
+                    />
                   )}
+                  <label style={{ cursor: 'pointer' }}>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={handleLogoUpload}
+                      style={{ display: 'none' }}
+                    />
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      gap: '8px', padding: '12px 24px',
+                      border: '2px dashed #ccc', borderRadius: '12px',
+                      cursor: 'pointer', transition: 'all 0.2s',
+                      background: isUploadingLogo ? '#f5f5f5' : 'white'
+                    }}>
+                      {isUploadingLogo ? (
+                        <span>جاري الرفع...</span>
+                      ) : (
+                        <>
+                          <span>↑</span>
+                          <span>اختر صورة الشعار</span>
+                        </>
+                      )}
+                    </div>
+                    <p style={{ fontSize: '12px', color: '#999', marginTop: '4px', textAlign: 'center' }}>
+                      PNG، JPG – حد أقصى 2 ميغابايت
+                    </p>
+                  </label>
                 </div>
               </div>
 

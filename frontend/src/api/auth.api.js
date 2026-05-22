@@ -16,17 +16,16 @@ export const loginApi = async (login, password) => {
 
   if (error) throw new Error(error.message);
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', data.user.id)
     .single();
 
-  if (profileError) throw new Error(profileError.message);
-
+  // profile may be null if not created yet - that's OK
   return {
     token: data.session.access_token,
-    user: { ...data.user, ...profile }
+    user: { ...data.user, ...(profile || {}) }
   };
 };
 

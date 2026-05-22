@@ -28,6 +28,13 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
   
   const { language, settings } = useSettingsStore();
   const isEn = language === 'en';
+  const [localLogo, setLocalLogo] = useState('');
+
+  useEffect(() => {
+    const handler = (e) => setLocalLogo(`${e.detail.newUrl}?t=${Date.now()}`);
+    window.addEventListener('store-logo-updated', handler);
+    return () => window.removeEventListener('store-logo-updated', handler);
+  }, []);
 
   const cartItemsCount = useCartStore(state => state.items.length);
   const products = useInventoryStore(state => state.products);
@@ -76,7 +83,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         {expanded ? (
           <div className={`flex items-center gap-2 ${isEn ? 'flex-row-reverse' : ''}`}>
             {settings.store_logo ? (
-              <img src={`${settings.store_logo}?t=${Date.now()}`} alt="Logo" className="w-8 h-8 rounded-xl object-contain bg-bg-card border border-default p-0.5" />
+              <img src={localLogo || `${settings.store_logo}?t=${Date.now()}`} alt="Logo" className="w-8 h-8 rounded-xl object-contain bg-bg-card border border-default p-0.5" />
             ) : (
               <Shirt className="w-6 h-6 text-accent-primary animate-pulse" />
             )}
@@ -87,7 +94,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         ) : (
           <div className="w-full flex justify-center">
             {settings.store_logo ? (
-              <img src={`${settings.store_logo}?t=${Date.now()}`} alt="Logo" className="w-7 h-7 rounded-lg object-contain bg-bg-card border border-default p-0.5" />
+              <img src={localLogo || `${settings.store_logo}?t=${Date.now()}`} alt="Logo" className="w-7 h-7 rounded-lg object-contain bg-bg-card border border-default p-0.5" />
             ) : (
               <Shirt className="w-6 h-6 text-accent-primary animate-pulse" />
             )}

@@ -49,6 +49,13 @@ export default function Settings() {
   const [logoUrl, setLogoUrl] = useState('');
   const [logoPreview, setLogoPreview] = useState(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [currentLogo, setCurrentLogo] = useState('');
+
+  useEffect(() => {
+    const handler = (e) => setCurrentLogo(`${e.detail.newUrl}?t=${Date.now()}`);
+    window.addEventListener('store-logo-updated', handler);
+    return () => window.removeEventListener('store-logo-updated', handler);
+  }, []);
 
   useEffect(() => {
     loadLocalPreferences();
@@ -100,6 +107,8 @@ export default function Settings() {
       setLogoUrl(publicUrl);
       setLogoPreview(null);
       URL.revokeObjectURL(localBlobUrl);
+      // Broadcast to all listening components instantly
+      window.dispatchEvent(new CustomEvent('store-logo-updated', { detail: { newUrl: publicUrl } }));
       showSuccess('تم رفع شعار المتجر بنجاح ✓');
     } catch (err) {
       showError('فشل رفع الشعار: ' + err.message);
@@ -372,7 +381,7 @@ export default function Settings() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {(logoPreview || logoUrl) && (
                     <img
-                      src={logoPreview || `${logoUrl}?t=${Date.now()}`}
+                      src={logoPreview || currentLogo || `${logoUrl}?t=${Date.now()}`}
                       alt="شعار المتجر"
                       style={{
                         width: '100px', height: '100px',

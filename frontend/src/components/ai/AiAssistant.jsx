@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { askAiApi, getAnalysisApi } from '../../api/ai.api';
-import useNotification from '../../hooks/useNotification';
 import useSettingsStore from '../../store/useSettingsStore';
 import useAuthStore from '../../store/useAuthStore';
 import {
@@ -22,7 +21,6 @@ import {
 import Button from '../ui/Button';
 
 export default function AiAssistant() {
-  const { showError } = useNotification();
   const { language } = useSettingsStore();
   const user = useAuthStore(s => s.user);
   const isEn = language === 'en';
@@ -128,7 +126,7 @@ export default function AiAssistant() {
             stockValue: ctx.stockValue || 0
           });
         })
-        .catch(() => showError(t('فشل تحميل التقرير', 'Failed to load analysis')))
+        .catch(() => {})
         .finally(() => setAnalysisLoading(false));
     }
   }, [isAnalysisOpen]);
@@ -148,16 +146,17 @@ export default function AiAssistant() {
     setIsPending(true);
 
     try {
-      const chatHistory = messages.slice(-10);
-      const response = await askAiApi(text, chatHistory, language);
+      const response = await askAiApi(text, [], language);
+      const replyText = response.reply || '';
+      if (!replyText) return;
       const msg = {
         role: 'assistant',
         type: 'text',
-        content: response.reply || response.error || ''
+        content: replyText
       };
       setMessages(prev => [...prev, msg]);
     } catch {
-      showError(t('حدث خطأ أثناء الاتصال بمساعد الذكاء الاصطناعي', 'An error occurred'));
+      // silently fail — no red error notices
     } finally {
       setIsPending(false);
     }

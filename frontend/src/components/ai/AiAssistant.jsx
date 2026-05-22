@@ -107,8 +107,27 @@ export default function AiAssistant() {
   useEffect(() => {
     if (isAnalysisOpen && !analysisData && !analysisLoading) {
       setAnalysisLoading(true);
-      getAnalysisApi()
-        .then(setAnalysisData)
+      getAnalysisApi(language)
+        .then((res) => {
+          const ctx = res.context || {};
+          setAnalysisData({
+            todaySales: ctx.todaySales ? {
+              count: ctx.todaySales.count || 0,
+              revenue: ctx.todaySales.revenue || 0,
+              profit: ctx.profitMargin || 0,
+              vsYesterday: ctx.todaySales.vsYesterday
+            } : null,
+            lowStock: (ctx.lowStock || []).map(p => ({
+              name: p.name,
+              quantity: p.quantity,
+              category: '',
+              image_url: p.image_url
+            })),
+            peakHours: null,
+            topProduct: ctx.topProduct ? { name: ctx.topProduct.name } : null,
+            stockValue: ctx.stockValue || 0
+          });
+        })
         .catch(() => showError(t('فشل تحميل التقرير', 'Failed to load analysis')))
         .finally(() => setAnalysisLoading(false));
     }
@@ -124,15 +143,17 @@ export default function AiAssistant() {
     if (!text || isPending) return;
 
     setInputVal('');
-    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    const userMsg = { role: 'user', content: text };
+    setMessages(prev => [...prev, userMsg]);
     setIsPending(true);
 
     try {
-      const response = await askAiApi(text);
+      const chatHistory = messages.slice(-10);
+      const response = await askAiApi(text, chatHistory, language);
       const msg = {
         role: 'assistant',
-        type: response.type || 'text',
-        content: response.text || response.reply || ''
+        type: 'text',
+        content: response.reply || response.error || ''
       };
       setMessages(prev => [...prev, msg]);
     } catch {
@@ -417,7 +438,7 @@ export default function AiAssistant() {
                       <Lightbulb className="w-4 h-4" />
                     </h4>
                     <div className={`flex flex-col gap-3 ${isEn ? 'text-left' : 'text-right'}`}>
-                      {analysisData.peakHours && (
+                      {analysisData.peakHours && analysisData.peakHours.display && (
                         <div className="bg-bg-card rounded-xl p-3 flex items-center gap-3">
                           <Clock className="w-5 h-5 text-accent-primary flex-shrink-0" />
                           <div>

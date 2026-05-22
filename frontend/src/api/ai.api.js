@@ -1,9 +1,19 @@
-// AI functionality requires a backend or Edge Function to keep the API key safe.
-// Since we removed the Node backend, this is mocked for now.
-export const askAiApi = async (message) => {
-  return { reply: "ميزة الذكاء الاصطناعي تحتاج إلى إعداد Supabase Edge Functions لتجنب كشف مفتاح API." };
+import { supabase } from '../lib/supabase';
+
+export const askAiApi = async (message, history = [], lang = 'ar') => {
+  const { data, error } = await supabase.functions.invoke('ai-assistant', {
+    body: { message, history, lang }
+  });
+
+  if (error) throw new Error(error.message);
+  return data;
 };
 
-export const getAnalysisApi = async () => {
-  return { analysis: "غير متوفر حالياً." };
+export const getAnalysisApi = async (lang = 'ar') => {
+  const { data, error } = await supabase.functions.invoke('ai-assistant', {
+    body: { message: 'تحليل كامل', history: [], lang }
+  });
+
+  if (error) throw new Error(error.message);
+  return data;
 };

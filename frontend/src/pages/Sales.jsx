@@ -33,7 +33,7 @@ function playBeep(freq = 880, dur = 0.08) {
 }
 
 // ─── Print Receipt ──────────────────────────────────────────────────────────
-function printReceiptHTML(items, invoice, settings, paymentMethod, amountPaid, change, discount, tax, lang = 'ar') {
+function printReceiptHTML(items = [], invoice, settings, paymentMethod, amountPaid, change, discount, tax, lang = 'ar') {
   const isEn = lang === 'en';
   const locale = isEn ? 'en-US' : 'ar-DZ';
   const date = new Date().toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' });

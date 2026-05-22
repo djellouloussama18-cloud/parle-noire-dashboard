@@ -75,7 +75,7 @@ async function clear(storeName) {
   });
 }
 
-async function bulkPut(storeName, items) {
+async function bulkPut(storeName, items = []) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(storeName, 'readwrite');

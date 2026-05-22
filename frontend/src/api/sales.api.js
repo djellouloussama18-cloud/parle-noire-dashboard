@@ -1,8 +1,9 @@
 import { supabase } from '../lib/supabase';
 
 export const getSalesApi = async () => {
-  const { data, error } = await supabase.from('sales').select('*, sale_items(*)').order('id', { ascending: false });
+  const { data: _data, error } = await supabase.from('sales').select('*, sale_items(*)').order('id', { ascending: false });
   if (error) throw new Error(error.message);
+  const data = _data || [];
   // Map sale_items to items for component compatibility
   return data.map(sale => ({ ...sale, items: sale.sale_items }));
 };

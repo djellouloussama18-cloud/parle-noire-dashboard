@@ -13,6 +13,12 @@ const useSettingsStore = create(
       currency: 'د.ج',
       tvaRate: 0,
       logoUrl: '',
+      receiptHeader: '',
+      receiptFooter: '',
+      receiptShowSku: true,
+      receiptShowPrice: true,
+      receiptShowTva: true,
+      receiptShowQrcode: true,
       isLoaded: false,
 
       // Legacy settings object for backward compatibility (used by Sales, Sidebar, etc.)
@@ -49,12 +55,18 @@ const useSettingsStore = create(
             store_phone: state.storePhone,
             currency: state.currency,
             tva_rate: String(state.tvaRate),
-            store_logo: state.logoUrl
+            store_logo: state.logoUrl,
+            receipt_header: state.receiptHeader,
+            receipt_footer: state.receiptFooter,
+            receipt_show_sku: state.receiptShowSku,
+            receipt_show_price: state.receiptShowPrice,
+            receipt_show_tva: state.receiptShowTva,
+            receipt_show_qrcode: state.receiptShowQrcode,
           }
         });
       },
 
-      // Build the full settings object from flat state + receipt fields
+      // Build the full settings object from flat state
       _buildSettings: () => {
         const state = get();
         return {
@@ -64,12 +76,12 @@ const useSettingsStore = create(
           currency: state.currency,
           tva_rate: String(state.tvaRate),
           store_logo: state.logoUrl,
-          receipt_header: state.receipt_header || '',
-          receipt_footer: state.receipt_footer || '',
-          receipt_show_sku: state.receipt_show_sku ?? true,
-          receipt_show_price: state.receipt_show_price ?? true,
-          receipt_show_tva: state.receipt_show_tva ?? true,
-          receipt_show_qrcode: state.receipt_show_qrcode ?? true,
+          receipt_header: state.receiptHeader,
+          receipt_footer: state.receiptFooter,
+          receipt_show_sku: state.receiptShowSku,
+          receipt_show_price: state.receiptShowPrice,
+          receipt_show_tva: state.receiptShowTva,
+          receipt_show_qrcode: state.receiptShowQrcode,
         };
       },
 
@@ -86,26 +98,45 @@ const useSettingsStore = create(
           const { data, error } = await supabase.from('settings').select('key, value');
           if (error) throw error;
 
-          const s = {};
+          const flat = {};
+          const raw = {};
           (data || []).forEach(({ key, value }) => {
-            if (key === 'store_name')       s.storeName = value;
-            if (key === 'store_phone')      s.storePhone = value;
-            if (key === 'store_address')    s.storeAddress = value;
-            if (key === 'store_email')      s.storeEmail = value;
-            if (key === 'currency')         s.currency = value;
-            if (key === 'tva_rate')         s.tvaRate = parseFloat(value) || 0;
-            if (key === 'store_logo')       s.logoUrl = value;
-            if (key === 'receipt_header')   s.receipt_header = value;
-            if (key === 'receipt_footer')   s.receipt_footer = value;
-            if (key === 'receipt_show_sku') s.receipt_show_sku = value === 'true';
-            if (key === 'receipt_show_price') s.receipt_show_price = value === 'true';
-            if (key === 'receipt_show_tva') s.receipt_show_tva = value === 'true';
-            if (key === 'receipt_show_qrcode') s.receipt_show_qrcode = value === 'true';
+            raw[key] = value;
+            if (key === 'store_name')          flat.storeName = value;
+            if (key === 'store_phone')         flat.storePhone = value;
+            if (key === 'store_address')       flat.storeAddress = value;
+            if (key === 'store_email')         flat.storeEmail = value;
+            if (key === 'currency')            flat.currency = value;
+            if (key === 'tva_rate')            flat.tvaRate = parseFloat(value) || 0;
+            if (key === 'store_logo')          flat.logoUrl = value;
+            if (key === 'receipt_header')      flat.receiptHeader = value;
+            if (key === 'receipt_footer')      flat.receiptFooter = value;
+            if (key === 'receipt_show_sku')    flat.receiptShowSku = value === 'true';
+            if (key === 'receipt_show_price')  flat.receiptShowPrice = value === 'true';
+            if (key === 'receipt_show_tva')    flat.receiptShowTva = value === 'true';
+            if (key === 'receipt_show_qrcode') flat.receiptShowQrcode = value === 'true';
           });
 
+          // Build the settings object directly from the raw fetched data,
+          // not from get() which may be stale.
+          const settingsFromDb = {
+            store_name:          raw.store_name          ?? get().settings.store_name,
+            store_address:       raw.store_address       ?? get().settings.store_address,
+            store_phone:         raw.store_phone         ?? get().settings.store_phone,
+            currency:            raw.currency            ?? get().settings.currency,
+            tva_rate:            raw.tva_rate            ?? get().settings.tva_rate,
+            store_logo:          raw.store_logo          ?? get().settings.store_logo,
+            receipt_header:      raw.receipt_header      ?? get().settings.receipt_header,
+            receipt_footer:      raw.receipt_footer      ?? get().settings.receipt_footer,
+            receipt_show_sku:    raw.receipt_show_sku    === 'true' ? true : raw.receipt_show_sku === 'false' ? false : get().settings.receipt_show_sku,
+            receipt_show_price:  raw.receipt_show_price  === 'true' ? true : raw.receipt_show_price === 'false' ? false : get().settings.receipt_show_price,
+            receipt_show_tva:    raw.receipt_show_tva    === 'true' ? true : raw.receipt_show_tva === 'false' ? false : get().settings.receipt_show_tva,
+            receipt_show_qrcode: raw.receipt_show_qrcode === 'true' ? true : raw.receipt_show_qrcode === 'false' ? false : get().settings.receipt_show_qrcode,
+          };
+
           set({
-            ...s,
-            settings: get()._buildSettings(),
+            ...flat,
+            settings: settingsFromDb,
             isLoaded: true
           });
         } catch (err) {
@@ -165,7 +196,36 @@ const useSettingsStore = create(
       updateSettings: async (newSettings) => {
         set({ isLoading: true });
         try {
-          // Use upsert instead of update so new keys work
+          // Map DB column keys → flat state keys for local update
+          const flatUpdate = {};
+          const dbColumnToFlat = {
+            store_name:          'storeName',
+            store_phone:         'storePhone',
+            store_address:       'storeAddress',
+            store_email:         'storeEmail',
+            currency:            'currency',
+            tva_rate:            'tvaRate',
+            store_logo:          'logoUrl',
+            receipt_header:      'receiptHeader',
+            receipt_footer:      'receiptFooter',
+            receipt_show_sku:    'receiptShowSku',
+            receipt_show_price:  'receiptShowPrice',
+            receipt_show_tva:    'receiptShowTva',
+            receipt_show_qrcode: 'receiptShowQrcode',
+          };
+          for (const [dbKey, val] of Object.entries(newSettings)) {
+            const flatKey = dbColumnToFlat[dbKey];
+            if (flatKey) flatUpdate[flatKey] = val;
+          }
+
+          // Apply to flat state immediately
+          set({ ...flatUpdate });
+
+          // Rebuild the settings object from the updated flat state
+          const merged = { ...get()._buildSettings() };
+          set({ settings: merged });
+
+          // Persist to Supabase using upsert
           for (const [key, value] of Object.entries(newSettings)) {
             await supabase.from('settings').upsert(
               { key, value: String(value) },
@@ -173,9 +233,10 @@ const useSettingsStore = create(
             );
           }
 
-          // Merge the new settings into a fresh baseline from flat state
-          const merged = { ...get()._buildSettings(), ...newSettings };
-          set({ settings: merged, isLoading: false });
+          // Re-sync from DB to confirm everything matches
+          await get().loadSettings(true);
+
+          set({ isLoading: false });
           return true;
         } catch (err) {
           console.error('Failed to update settings:', err);
@@ -234,6 +295,12 @@ const useSettingsStore = create(
         currency: state.currency,
         tvaRate: state.tvaRate,
         logoUrl: state.logoUrl,
+        receiptHeader: state.receiptHeader,
+        receiptFooter: state.receiptFooter,
+        receiptShowSku: state.receiptShowSku,
+        receiptShowPrice: state.receiptShowPrice,
+        receiptShowTva: state.receiptShowTva,
+        receiptShowQrcode: state.receiptShowQrcode,
         settings: state.settings,
         accentColor: state.accentColor,
         fontSize: state.fontSize,

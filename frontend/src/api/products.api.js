@@ -23,6 +23,7 @@ export const createProductApi = async (productData) => {
   const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await supabase.from('products').insert({ ...productData, user_id: user?.id }).select().single();
   if (error) throw new Error(error.message);
+  await offlineDB.put('products', data);
   return data;
 };
 
@@ -40,6 +41,7 @@ export const updateProductApi = async (id, productData) => {
     .select()
     .single();
   if (error) throw new Error(error.message);
+  await offlineDB.put('products', data);
   return data;
 };
 
@@ -51,6 +53,7 @@ export const deleteProductApi = async (id) => {
   }
   const { error } = await supabase.from('products').delete().eq('id', id);
   if (error) throw new Error(error.message);
+  await offlineDB.remove('products', id);
   return { success: true };
 };
 
@@ -74,6 +77,7 @@ export const createCategoryApi = async (categoryData) => {
   }
   const { data, error } = await supabase.from('categories').insert(categoryData).select().single();
   if (error) throw new Error(error.message);
+  await offlineDB.put('categories', data);
   return data;
 };
 
@@ -86,6 +90,7 @@ export const updateCategoryApi = async (id, categoryData) => {
   }
   const { data, error } = await supabase.from('categories').update(categoryData).eq('id', id).select().single();
   if (error) throw new Error(error.message);
+  await offlineDB.put('categories', data);
   return data;
 };
 
@@ -97,5 +102,6 @@ export const deleteCategoryApi = async (id) => {
   }
   const { error } = await supabase.from('categories').delete().eq('id', id);
   if (error) throw new Error(error.message);
+  await offlineDB.remove('categories', id);
   return { success: true };
 };

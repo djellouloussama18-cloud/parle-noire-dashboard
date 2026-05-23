@@ -21,6 +21,7 @@ export const createCustomerApi = async (customerData) => {
   }
   const { data, error } = await supabase.from('customers').insert(customerData).select().single();
   if (error) throw new Error(error.message);
+  await offlineDB.put('customers', data);
   return data;
 };
 
@@ -33,6 +34,7 @@ export const updateCustomerApi = async (id, customerData) => {
   }
   const { data, error } = await supabase.from('customers').update(customerData).eq('id', id).select().single();
   if (error) throw new Error(error.message);
+  await offlineDB.put('customers', data);
   return data;
 };
 
@@ -44,5 +46,6 @@ export const deleteCustomerApi = async (id) => {
   }
   const { error } = await supabase.from('customers').delete().eq('id', id);
   if (error) throw new Error(error.message);
+  await offlineDB.remove('customers', id);
   return { success: true };
 };

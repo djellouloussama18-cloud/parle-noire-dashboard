@@ -89,18 +89,24 @@ export const createSaleApi = async (saleData) => {
 
   if (saleError) throw new Error(saleError.message);
 
+  let saleItems = [];
   if (items && items.length > 0) {
     const saleItemsToInsert = items.map(item => ({ ...item, sale_id: sale.id }));
-    const { error: itemsError } = await supabase.from('sale_items').insert(saleItemsToInsert);
+    const { data: insertedItems, error: itemsError } = await supabase.from('sale_items').insert(saleItemsToInsert).select();
     if (itemsError) throw new Error(itemsError.message);
+    saleItems = insertedItems || [];
 
     for (const item of items) {
       const { data: prod } = await supabase.from('products').select('quantity').eq('id', item.product_id).single();
       if (prod) {
         await supabase.from('products').update({ quantity: prod.quantity - item.quantity }).eq('id', item.product_id);
+        await offlineDB.put('products', { ...prod, quantity: (prod.quantity || 0) - (item.quantity || 0) });
       }
     }
   }
+
+  const saleRecord = { ...sale, sale_items: saleItems };
+  await offlineDB.put('sales', saleRecord);
 
   window.dispatchEvent(new CustomEvent('sale-completed'));
   window.dispatchEvent(new CustomEvent('data-synced'));

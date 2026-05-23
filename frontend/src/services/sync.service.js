@@ -26,12 +26,12 @@ export async function syncAllData() {
     );
 
     const syncTasks = [
-      { store: 'products', table: 'products' },
-      { store: 'categories', table: 'categories' },
-      { store: 'customers', table: 'customers' },
-      { store: 'settings', table: 'settings' },
-      { store: 'sales', table: 'sales' },
-      { store: 'notes', table: 'notes' }
+      { store: 'products', table: 'products', select: '*' },
+      { store: 'categories', table: 'categories', select: '*' },
+      { store: 'customers', table: 'customers', select: '*' },
+      { store: 'settings', table: 'settings', select: '*' },
+      { store: 'sales', table: 'sales', select: '*, sale_items(*)' },
+      { store: 'notes', table: 'notes', select: '*' }
     ];
 
     for (const task of syncTasks) {
@@ -40,12 +40,15 @@ export async function syncAllData() {
         continue;
       }
 
-      const { data, error } = await supabase.from(task.table).select('*');
+      const { data, error } = await supabase.from(task.table).select(task.select);
       
       if (!error && data) {
+        const items = task.store === 'sales'
+          ? data.map(sale => ({ ...sale, sale_items: sale.sale_items || [] }))
+          : data;
         await offlineDB.clear(task.store);
-        await offlineDB.bulkPut(task.store, data);
-        console.log(`✅ Synced ${data.length} items to ${task.store}`);
+        await offlineDB.bulkPut(task.store, items);
+        console.log(`✅ Synced ${items.length} items to ${task.store}`);
       } else if (error) {
         console.error(`❌ Sync error for ${task.table}:`, error.message);
       }

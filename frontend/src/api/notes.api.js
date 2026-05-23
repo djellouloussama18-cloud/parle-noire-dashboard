@@ -30,6 +30,7 @@ export const createNoteApi = async (noteData) => {
   const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await supabase.from('notes').insert({ ...noteData, created_by: user?.id }).select().single();
   if (error) throw new Error(error.message);
+  await offlineDB.put('notes', data);
   return data;
 };
 
@@ -42,6 +43,7 @@ export const updateNoteApi = async (id, noteData) => {
   }
   const { data, error } = await supabase.from('notes').update(noteData).eq('id', id).select().single();
   if (error) throw new Error(error.message);
+  await offlineDB.put('notes', data);
   return data;
 };
 
@@ -53,6 +55,7 @@ export const deleteNoteApi = async (id) => {
   }
   const { error } = await supabase.from('notes').delete().eq('id', id);
   if (error) throw new Error(error.message);
+  await offlineDB.remove('notes', id);
   return { success: true };
 };
 
@@ -69,6 +72,7 @@ export const markNoteAsReadApi = async (id) => {
   }
   const { data, error } = await supabase.from('notes').update({ read: true }).eq('id', id).select().single();
   if (error) throw new Error(error.message);
+  await offlineDB.put('notes', data);
   return data;
 };
 

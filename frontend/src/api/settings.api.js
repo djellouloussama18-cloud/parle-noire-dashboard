@@ -41,5 +41,6 @@ export const updateSettingApi = async (key, value) => {
     .upsert({ key, value: String(value) }, { onConflict: 'key' });
 
   if (error) throw new Error(error.message);
+  await offlineDB.put('settings', { key, value: String(value) });
   return true;
 };

@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getReportsSummaryApi, getReportsChartsApi } from '../api/reports.api';
-import { getSalesApi } from '../api/sales.api';
 import useInventoryStore from '../store/useInventoryStore';
 import useSettingsStore from '../store/useSettingsStore';
+import useSalesStore from '../store/useSalesStore';
 import useNotification from '../hooks/useNotification';
 import formatCurrency from '../utils/formatCurrency';
 import {
@@ -26,58 +25,41 @@ export default function Dashboard() {
   const { showError } = useNotification();
   const { fetchProducts, fetchCategories } = useInventoryStore();
   const { language } = useSettingsStore();
+  const { summary, chartsData, recentSales, loadDashboardStats, isLoading: isStatsLoading } = useSalesStore();
   const isEn = language === 'en';
 
-  const [isLoading, setIsLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState('week'); // day, week, month, year
 
-  // State for summary KPIs and Charts
-  const [summary, setSummary] = useState({
-    totalRevenue: 0,
-    netProfit: 0,
-    profitMargin: 0,
-    avgInvoice: 0,
-    lowStockCount: 0,
-    topProduct: isEn ? 'None' : 'لا يوجد',
-    topProductQty: 0,
-    invoiceCount: 0
-  });
-
-  const [chartsData, setChartsData] = useState({
-    salesTrend: [],
-    categorySplit: [],
-    topProducts: [],
-    financialTimeline: []
-  });
-
-  const [recentSales, setRecentSales] = useState([]);
-
-  const loadData = async (period) => {
-    setIsLoading(true);
+  const loadData = async (force = false, period) => {
     try {
       const p = period || timeFilter;
-      await fetchProducts();
-      await fetchCategories();
-
-      const [sumRes, chartsRes, salesRes] = await Promise.all([
-        getReportsSummaryApi(p),
-        getReportsChartsApi(p),
-        getSalesApi()
+      // Fix 3 & 5: Refresh in background, already parallelized in store
+      await Promise.all([
+        fetchProducts(),
+        fetchCategories(),
+        loadDashboardStats(force, p)
       ]);
-
-      setSummary(sumRes);
-      setChartsData(chartsRes);
-      setRecentSales(salesRes.slice(0, 5));
     } catch (err) {
       showError(isEn ? 'Error loading dashboard data' : 'حدث خطأ أثناء تحميل بيانات لوحة التحكم');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    // Fix 3: Show stale data immediately, refresh in background
+    loadData(false, timeFilter);
   }, [timeFilter]);
+
+  useEffect(() => {
+    const handleRefresh = () => loadData(true, timeFilter);
+    window.addEventListener('sale-completed', handleRefresh);
+    window.addEventListener('dashboard-refresh', handleRefresh);
+    return () => {
+      window.removeEventListener('sale-completed', handleRefresh);
+      window.removeEventListener('dashboard-refresh', handleRefresh);
+    };
+  }, [timeFilter]);
+
+  const isInitialLoading = isStatsLoading && summary.totalRevenue === 0;
 
   return (
     <div className="flex flex-col gap-6 text-right pb-10 pt-6 select-none">
@@ -87,39 +69,42 @@ export default function Dashboard() {
           <h2 className="text-2xl lg:text-3xl font-black text-text-primary">{isEn ? 'Dashboard' : 'لوحة التحكم'}</h2>
           <p className="text-xs font-semibold text-text-secondary mt-1">{isEn ? 'Welcome back, here is what is happening in your store today' : 'مرحباً بك، هذا ما يحدث في متجرك اليوم'}</p>
         </div>
-        <div           className="text-xs font-black text-accent-primary bg-hover border border-accent-primary/20 px-4 py-2 rounded-xl">
+        <div className="text-xs font-black text-accent-primary bg-hover border border-accent-primary/20 px-4 py-2 rounded-xl">
           {isEn ? 'Auto-sync: Active' : 'تحديث تلقائي: نشط'}
         </div>
       </div>
 
       {/* 1. KPIs Row (4 Cards) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <KpiCard
           title={isEn
             ? (timeFilter === 'day' ? "Today's Sales" : timeFilter === 'week' ? "This Week's Sales" : timeFilter === 'month' ? 'Monthly Sales' : 'Yearly Sales')
             : (timeFilter === 'day' ? 'إجمالي مبيعات اليوم' : timeFilter === 'week' ? 'مبيعات الأسبوع' : timeFilter === 'month' ? 'مبيعات الشهر' : 'مبيعات السنة')}
-          value={isLoading ? '---' : formatCurrency(summary.totalRevenue)}
+          value={formatCurrency(summary.totalRevenue)}
           icon={Receipt}
-          trendText={isLoading ? '' : `${summary.invoiceCount} ${isEn ? 'Invoices' : 'فواتير'}`}
+          trendText={`${summary.invoiceCount} ${isEn ? 'Invoices' : 'فواتير'}`}
           trendType="up"
+          isLoading={isInitialLoading}
           iconColorClass="text-accent-primary bg-active"
         />
 
         <KpiCard
           title={isEn ? 'Total Revenue' : 'إجمالي الإيرادات'}
-          value={isLoading ? '---' : formatCurrency(summary.netProfit)}
+          value={formatCurrency(summary.netProfit)}
           icon={FileText}
           trendText={summary.profitMargin > 0 ? `${summary.profitMargin}% ${isEn ? 'margin' : 'هامش ربح'}` : ''}
           trendType="up"
+          isLoading={isInitialLoading}
           iconColorClass="text-accent-secondary bg-accent-secondary/10"
         />
 
         <KpiCard
           title={isEn ? "Items to Reorder" : "منتجات تحتاج إعادة طلب"}
-          value={isLoading ? '---' : `${summary.lowStockCount} ${isEn ? 'Items' : 'منتج'}`}
+          value={`${summary.lowStockCount} ${isEn ? 'Items' : 'منتج'}`}
           icon={AlertTriangle}
           trendText={isEn ? "View shortages" : "عرض تفاصيل النواقص"}
           trendType="neutral"
+          isLoading={isInitialLoading}
           iconColorClass="text-status-warning bg-status-warning/10"
           onClick={() => navigate('/inventory')}
         />
@@ -128,10 +113,11 @@ export default function Dashboard() {
           title={isEn
             ? (timeFilter === 'day' ? 'Top Selling Today' : timeFilter === 'week' ? 'Top This Week' : timeFilter === 'month' ? 'Top This Month' : 'Top This Year')
             : (timeFilter === 'day' ? 'الأكثر مبيعاً اليوم' : timeFilter === 'week' ? 'الأكثر مبيعاً أسبوعياً' : timeFilter === 'month' ? 'الأكثر مبيعاً شهرياً' : 'الأكثر مبيعاً سنوياً')}
-          value={isLoading ? '---' : summary.topProduct}
+          value={summary.topProduct}
           icon={Star}
-          trendText={isLoading ? '' : `${summary.topProductQty} ${isEn ? 'sold' : 'قطع مباعة'}`}
+          trendText={`${summary.topProductQty} ${isEn ? 'sold' : 'قطع مباعة'}`}
           trendType="up"
+          isLoading={isInitialLoading}
           iconColorClass="text-status-warning bg-status-warning/10"
         />
       </div>
@@ -139,7 +125,7 @@ export default function Dashboard() {
       {/* 2. Middle Row: Sales Trend (65%) & Recent Invoices (35%) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sales Area Chart (65%) */}
-        <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-medium flex flex-col justify-between min-h-[380px]">
+        <div className="lg:col-span-2 glass-panel p-4 md:p-6 rounded-2xl border border-medium flex flex-col justify-between min-h-[260px] md:min-h-[380px]">
           <div className="flex items-center justify-between pb-4 border-b border-light">
             {/* Filter buttons */}
             <div className="flex gap-2">
@@ -164,13 +150,16 @@ export default function Dashboard() {
             <h3 className="text-sm font-extrabold text-text-primary">{isEn ? 'Sales Trend' : 'تطور المبيعات'}</h3>
           </div>
 
-          <div className="mt-4 flex-grow">
+          <div className="mt-4 flex-grow relative">
+            {isInitialLoading && (
+              <div className="absolute inset-0 bg-subtle/20 animate-pulse rounded-xl z-10" />
+            )}
             <AreaChart data={chartsData.salesTrend} xKey="label" yKey="sales" />
           </div>
         </div>
 
         {/* Recent sales logs (35%) */}
-        <div className="glass-panel p-6 rounded-2xl border border-medium flex flex-col justify-between min-h-[380px]">
+        <div className="glass-panel p-4 md:p-6 rounded-2xl border border-medium flex flex-col justify-between min-h-[260px] md:min-h-[380px]">
           <div className="flex items-center justify-between pb-4 border-b border-light">
             <button
               onClick={() => navigate('/reports')}
@@ -183,11 +172,10 @@ export default function Dashboard() {
           </div>
 
           <div className="flex-grow mt-4 flex flex-col gap-3.5 overflow-y-auto">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center my-auto gap-2">
-                <div className="w-6 h-6 border-2 border-accent-primary border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-[10px] text-text-secondary">{isEn ? 'Loading...' : 'جاري التحميل...'}</span>
-              </div>
+            {isInitialLoading ? (
+              [...Array(5)].map((_, i) => (
+                <div key={i} className="h-16 w-full bg-subtle/40 animate-pulse rounded-xl" />
+              ))
             ) : recentSales.length === 0 ? (
               <div className="my-auto text-center text-xs text-text-secondary select-none">
                 {isEn ? 'No recent transactions today.' : 'لا توجد عمليات مبيعات مسجلة اليوم.'}
@@ -222,7 +210,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
         {/* Top products list (33%) */}
-        <div className="glass-panel p-6 rounded-2xl border border-medium flex flex-col justify-between min-h-[450px]">
+        <div className="glass-panel p-4 md:p-6 rounded-2xl border border-medium flex flex-col justify-between min-h-[300px] md:min-h-[450px]">
           <h3 className={`text-sm font-extrabold text-text-primary pb-3 border-b border-light ${isEn ? 'text-left' : ''}`}>
             {isEn
               ? (timeFilter === 'day' ? 'Top Selling Today' : timeFilter === 'week' ? 'Top Selling This Week' : timeFilter === 'month' ? 'Top Selling This Month' : 'Top Selling This Year')
@@ -230,7 +218,17 @@ export default function Dashboard() {
           </h3>
 
           <div className="flex-grow mt-4 flex flex-col gap-4 overflow-y-auto justify-center">
-            {chartsData.topProducts.length === 0 ? (
+            {isInitialLoading ? (
+              [...Array(5)].map((_, i) => (
+                <div key={i} className="flex flex-col gap-2">
+                  <div className="flex justify-between">
+                    <div className="w-12 h-3 bg-subtle animate-pulse rounded" />
+                    <div className="w-24 h-3 bg-subtle animate-pulse rounded" />
+                  </div>
+                  <div className="h-2 w-full bg-subtle animate-pulse rounded-full" />
+                </div>
+              ))
+            ) : chartsData.topProducts.length === 0 ? (
               <div className="text-center text-xs text-text-secondary">{isEn ? 'Not enough sales data' : 'لا تتوفر مبيعات كافية للتحليل'}</div>
             ) : (
               chartsData.topProducts.map((prod, idx) => (
@@ -257,13 +255,18 @@ export default function Dashboard() {
         </div>
 
         {/* Category donut distribution (33%) */}
-        <div className="glass-panel p-6 rounded-2xl border border-medium flex flex-col justify-between min-h-[450px]">
+        <div className="glass-panel p-4 md:p-6 rounded-2xl border border-medium flex flex-col justify-between min-h-[300px] md:min-h-[450px]">
           <h3 className={`text-sm font-extrabold text-text-primary pb-3 border-b border-light ${isEn ? 'text-left' : ''}`}>
             {isEn ? 'Sales by Category' : 'توزيع المبيعات بالفئات'}
           </h3>
 
-          <div className="flex-grow mt-4 flex items-center justify-center">
-            {chartsData.categorySplit.length === 0 ? (
+          <div className="flex-grow mt-4 flex items-center justify-center relative">
+            {isInitialLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-48 h-48 rounded-full border-8 border-subtle animate-pulse" />
+              </div>
+            )}
+            {chartsData.categorySplit.length === 0 && !isInitialLoading ? (
               <div className="text-center text-xs text-text-secondary my-auto">{isEn ? 'No category data' : 'لا تتوفر بيانات للتقسيم'}</div>
             ) : (
               <DonutChart data={chartsData.categorySplit} />

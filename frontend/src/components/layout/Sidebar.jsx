@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
 import useCartStore from '../../store/useCartStore';
 import useInventoryStore from '../../store/useInventoryStore';
 import useSettingsStore from '../../store/useSettingsStore';
 import useNotesStore from '../../store/useNotesStore';
+import ConnectionStatus from '../ui/ConnectionStatus';
 import {
   Home,
   Receipt,
@@ -18,7 +19,7 @@ import {
   Menu,
   Users,
   StickyNote,
-  Trophy
+  X
 } from 'lucide-react';
 
 export default function Sidebar({ isExpanded, setIsExpanded }) {
@@ -27,15 +28,18 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
   const logout = useAuthStore(state => state.logout);
   const user = useAuthStore(state => state.user);
   
-  const { language, settings } = useSettingsStore();
+  const { language, settings, storeName } = useSettingsStore();
   const isEn = language === 'en';
   const [localLogo, setLocalLogo] = useState('');
+  const logoFailedRef = useRef(false);
 
   useEffect(() => {
     const handler = (e) => setLocalLogo(`${e.detail.newUrl}?t=${Date.now()}`);
     window.addEventListener('store-logo-updated', handler);
     return () => window.removeEventListener('store-logo-updated', handler);
   }, []);
+
+  const logoUrl = localLogo || (settings.store_logo ? `${settings.store_logo}?t=${Date.now()}` : null);
 
   const cartItemsCount = useCartStore(state => state.items.length);
   const products = useInventoryStore(state => state.products);
@@ -50,6 +54,13 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
   }, []);
 
   const [isHovered, setIsHovered] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const toggle = () => setIsOpen(prev => !prev);
+    window.addEventListener('toggle-sidebar', toggle);
+    return () => window.removeEventListener('toggle-sidebar', toggle);
+  }, []);
 
   const menuItems = [
     { path: '/', label: isEn ? 'Home' : 'الرئيسية', icon: Home },
@@ -60,7 +71,6 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     { path: '/barcode', label: isEn ? 'Barcode' : 'الباركود', icon: QrCode },
     { path: '/print', label: isEn ? 'Printing' : 'الطباعة', icon: Printer },
     { path: '/notes', label: isEn ? 'Notes' : 'الملاحظات', icon: StickyNote, alert: unreadNotes > 0 ? unreadNotes : null },
-    { path: '/tournaments', label: isEn ? 'Tournaments' : 'البطولات', icon: Trophy },
     { path: '/settings', label: isEn ? 'Settings' : 'الإعدادات', icon: Settings },
   ];
 
@@ -69,7 +79,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     navigate('/login');
   };
 
-  const expanded = isExpanded || isHovered;
+  const expanded = isExpanded || isHovered || isOpen;
 
   return (
     <>
@@ -77,28 +87,52 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={`fixed top-0 ${isEn ? 'left-0 border-r' : 'right-0 border-l'} h-full z-40 bg-bg-primary/95 border-light backdrop-blur-md flex flex-col transition-all duration-300 select-none no-print ${
+        isOpen ? 'flex' : 'hidden'
+      } md:flex ${
         expanded ? 'w-60' : 'w-[72px]'
-      }`}
+      } ${isOpen ? 'w-full' : ''} ${isExpanded ? 'md:w-60' : ''} md:translate-x-0`}
     >
       {/* 1. Header */}
       <div className={`h-16 flex items-center justify-between px-4 border-b border-light flex-shrink-0 ${isEn ? 'flex-row-reverse' : ''}`}>
+        <button
+          onClick={() => setIsOpen(false)}
+          className="md:hidden p-1 text-text-secondary hover:text-accent-primary rounded-lg transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
         {expanded ? (
           <div className={`flex items-center gap-2 ${isEn ? 'flex-row-reverse' : ''}`}>
-            {settings.store_logo ? (
-              <img src={localLogo || `${settings.store_logo}?t=${Date.now()}`} alt="Logo" className="w-8 h-8 rounded-xl object-contain bg-bg-card border border-default p-0.5" />
-            ) : (
-              <Shirt className="w-6 h-6 text-accent-primary animate-pulse" />
+            {logoUrl && (
+              <img
+                src={logoUrl}
+                alt="Store Logo"
+                onError={(e) => {
+                  if (!logoFailedRef.current) {
+                    logoFailedRef.current = true;
+                    e.target.style.display = 'none';
+                  }
+                }}
+                className="w-8 h-8 rounded-xl object-contain bg-bg-card border border-default p-0.5"
+              />
             )}
             <span className="font-black text-sm tracking-widest bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
-              {settings.store_name}
+              {storeName || settings.store_name}
             </span>
           </div>
         ) : (
           <div className="w-full flex justify-center">
-            {settings.store_logo ? (
-              <img src={localLogo || `${settings.store_logo}?t=${Date.now()}`} alt="Logo" className="w-7 h-7 rounded-lg object-contain bg-bg-card border border-default p-0.5" />
-            ) : (
-              <Shirt className="w-6 h-6 text-accent-primary animate-pulse" />
+            {logoUrl && (
+              <img
+                src={logoUrl}
+                alt="Store Logo"
+                onError={(e) => {
+                  if (!logoFailedRef.current) {
+                    logoFailedRef.current = true;
+                    e.target.style.display = 'none';
+                  }
+                }}
+                className="w-7 h-7 rounded-lg object-contain bg-bg-card border border-default p-0.5"
+              />
             )}
           </div>
         )}
@@ -113,7 +147,11 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
           return (
             <button
               key={idx}
-              onClick={() => navigate(item.path)}
+              onClick={() => {
+                navigate(item.path);
+                setIsOpen(false);
+                setIsExpanded(false);
+              }}
               className={`relative w-full h-[52px] rounded-xl flex items-center transition-all duration-200 group flex-shrink-0 ${
                 expanded ? 'justify-start px-4 gap-4' : 'justify-center'
               } ${isEn && expanded ? 'flex-row-reverse' : ''} ${
@@ -160,6 +198,9 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
 
       {/* 3. User Details Footer */}
       <div className="border-t border-light bg-bg-secondary/40 p-3 flex flex-col gap-2 flex-shrink-0">
+        <div className="flex justify-center mb-2">
+           <ConnectionStatus />
+        </div>
         <div className={`flex items-center ${expanded ? 'justify-between px-1' : 'justify-center'} ${isEn ? 'flex-row-reverse' : ''}`}>
           {expanded && (
             <div className={`flex items-center gap-2.5 ${isEn ? 'text-left flex-row-reverse' : 'text-right'}`}>
@@ -191,10 +232,10 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       </div>
     </aside>
 
-    {isExpanded && (
+    {isOpen && (
       <div
         className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
-        onClick={() => setIsExpanded(false)}
+        onClick={() => setIsOpen(false)}
       />
     )}
     </>

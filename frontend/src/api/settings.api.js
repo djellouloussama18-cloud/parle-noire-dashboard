@@ -2,8 +2,11 @@
 // Go to: Supabase Dashboard → Storage → New Bucket → Name: "store-assets" → Public: ON
 
 import { supabase } from '../lib/supabase';
+import { offlineDB } from '../services/db.service';
+import { addToQueue } from '../services/offline-queue.service';
 
 export const uploadLogoApi = async (file) => {
+  if (!navigator.onLine) throw new Error('يجب توفر اتصال بالإنترنت لرفع الشعار');
   if (!file) throw new Error('لم يتم اختيار ملف');
   if (file.size > 2 * 1024 * 1024) throw new Error('حجم الملف يتجاوز 2 ميغابايت');
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
@@ -27,6 +30,12 @@ export const uploadLogoApi = async (file) => {
 };
 
 export const updateSettingApi = async (key, value) => {
+  if (!navigator.onLine) {
+    const data = { key, value: String(value) };
+    await addToQueue({ type: 'updateSetting', payload: data });
+    await offlineDB.put('settings', data);
+    return true;
+  }
   const { error } = await supabase
     .from('settings')
     .upsert({ key, value: String(value) }, { onConflict: 'key' });

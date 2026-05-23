@@ -64,6 +64,8 @@ export default function Notes() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [editForm, setEditForm] = useState({ title: '', content: '', priority: 'medium' });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isReading, setIsReading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchNotes();
@@ -107,14 +109,18 @@ export default function Notes() {
   };
 
   const handleMarkRead = async (id) => {
+    setIsReading(true);
     try {
       await markAsRead(id);
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsReading(false);
     }
   };
 
   const handleDelete = async (id) => {
+    setIsDeleting(true);
     try {
       await deleteNote(id);
       const deletedSelected = selectedNote?.id === id;
@@ -122,6 +128,8 @@ export default function Notes() {
       showSuccess(isEn ? 'Note deleted' : 'تم حذف الملاحظة');
     } catch (err) {
       showError(err.response?.data?.message || (isEn ? 'Failed to delete' : 'فشل الحذف'));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -534,7 +542,7 @@ export default function Notes() {
                     setSelectedNote(prev => ({ ...prev, read: true }));
                   }
                   setShowViewModal(false);
-                }} className="flex-1 h-11 text-xs font-bold">
+                }} disabled={isReading} className="flex-1 h-11 text-xs font-bold">
                   <CheckCircle className="w-4 h-4" />
                   {isEn ? 'Mark as Read' : 'تحديد كمقروءة'}
                 </Button>
@@ -543,12 +551,12 @@ export default function Notes() {
                 <Button onClick={async () => {
                   await handleMarkRead(selectedNote.id);
                   setSelectedNote(prev => ({ ...prev, read: true }));
-                }} variant="secondary" className="h-11 text-xs font-bold">
+                }} variant="secondary" disabled={isReading} className="h-11 text-xs font-bold">
                   <CheckCircle className="w-4 h-4" />
                   {isEn ? 'Mark Read' : 'تحديد مقروءة'}
                 </Button>
               )}
-              <Button onClick={() => { handleDelete(selectedNote.id); }} variant="danger" className="h-11 text-xs font-bold">
+              <Button onClick={() => { handleDelete(selectedNote.id); }} variant="danger" disabled={isDeleting} className="h-11 text-xs font-bold">
                 <Trash2 className="w-4 h-4" />
                 {isEn ? 'Delete' : 'حذف'}
               </Button>

@@ -14,7 +14,7 @@ export default function Button({
   const { language } = useSettingsStore();
   const isEn = language === 'en';
 
-  let baseStyle = "relative flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-bold text-sm transition-all duration-200 outline-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
+  let baseStyle = "relative flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-bold text-sm transition-all duration-150 outline-none active:scale-[0.95] active:opacity-85 disabled:opacity-50 disabled:pointer-events-none";
   let variantStyle = "";
 
   if (variant === 'primary') {

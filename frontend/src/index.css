@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Global Button Press Feedback ── */
+button {
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+button:active {
+  transform: scale(0.95);
+  opacity: 0.85;
+}
+
 /* ── Dynamic Theme Variables ── */
 :root {
   --color-accent-primary: #00FF7F;

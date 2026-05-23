@@ -1,18 +1,9 @@
-// Unregister old service workers to prevent cache conflicts
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    registrations.forEach((registration) => {
-      registration.unregister();
-      console.log('Service worker unregistered');
-    });
-  });
-}
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 import { setupOnlineSync } from './services/offline-queue.service.js';
+import { syncAllData } from './services/sync.service.js';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <App />
@@ -20,6 +11,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 // Initialise offline queue auto-sync on reconnect
 setupOnlineSync();
+syncAllData();
 
 // Register service worker with update handling
 if ('serviceWorker' in navigator) {

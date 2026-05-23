@@ -46,7 +46,7 @@ async function put(storeName, data) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(storeName, 'readwrite');
     const store = tx.objectStore(storeName);
-    const record = { ...data, updatedAt: Date.now() };
+    const record = { ...data, id: data.id || Date.now(), updatedAt: Date.now() };
     const req = store.put(record);
     req.onsuccess = () => { resolve(req.result); db.close(); };
     req.onerror = () => { reject(req.error); db.close(); };

@@ -217,8 +217,12 @@ export default function Inventory() {
     showSuccess(isEn ? 'Codes generated successfully!' : 'تم توليد الرموز العشوائية بنجاح!');
   };
 
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSavingProduct(true);
     const errors = {};
     if (!formData.name_ar?.trim()) errors.name_ar = isEn ? 'This field is required' : 'هذا الحقل مطلوب';
     if (!formData.sku?.trim()) errors.sku = isEn ? 'This field is required' : 'هذا الحقل مطلوب';
@@ -260,6 +264,8 @@ export default function Inventory() {
       } catch (err) {
         showError(err.message || (isEn ? 'Failed to save product' : 'فشل حفظ المنتج'));
         fetchProducts();
+      } finally {
+        setIsSavingProduct(false);
       }
     } else {
       try {
@@ -269,6 +275,8 @@ export default function Inventory() {
         setIsModalOpen(false);
       } catch (err) {
         showError(err.message || (isEn ? 'Failed to save product' : 'فشل حفظ المنتج'));
+      } finally {
+        setIsSavingProduct(false);
       }
     }
   };
@@ -299,12 +307,15 @@ export default function Inventory() {
       showWarning(isEn ? 'Arabic name is required' : 'اسم الفئة بالعربية مطلوب');
       return;
     }
+    setIsAddingCategory(true);
     try {
       await addCategory(newCategoryData);
       showSuccess(isEn ? 'Category added successfully' : 'تمت إضافة الفئة بنجاح');
       setNewCategoryData({ name_ar: '', name_en: '', color: '#00FF7F', icon: 'Tag' });
     } catch (err) {
       showError(err.message || (isEn ? 'Failed to add category' : 'فشل إضافة الفئة'));
+    } finally {
+      setIsAddingCategory(false);
     }
   };
 
@@ -636,9 +647,20 @@ export default function Inventory() {
             <button
               type="submit"
               form="product-form"
-              className="h-11 px-6 text-xs font-extrabold rounded-xl bg-accent-primary text-on-accent hover:brightness-110 active:scale-[0.98] shadow-lg shadow-accent-primary/20 transition-all duration-200"
+              disabled={isSavingProduct}
+              className="h-11 px-6 text-xs font-extrabold rounded-xl bg-accent-primary text-on-accent hover:brightness-110 active:scale-[0.95] shadow-lg shadow-accent-primary/20 transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none"
             >
-              {editingId ? (isEn ? 'Save Changes' : 'حفظ التعديلات') : (isEn ? 'Save Product' : 'إضافة وحفظ الصنف')}
+              {isSavingProduct ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {isEn ? 'Saving...' : 'جارٍ الحفظ...'}
+                </span>
+              ) : (
+                <span>{editingId ? (isEn ? 'Save Changes' : 'حفظ التعديلات') : (isEn ? 'Save Product' : 'إضافة وحفظ الصنف')}</span>
+              )}
             </button>
           </div>
         }
@@ -967,6 +989,7 @@ export default function Inventory() {
             <Button
               type="submit"
               variant="primary"
+              isLoading={isAddingCategory}
               className="h-11 text-xs font-bold w-full mt-2"
             >
               {isEn ? 'Create Category' : 'تأكيد وإضافة الفئة'}

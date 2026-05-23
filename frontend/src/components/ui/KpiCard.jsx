@@ -9,8 +9,24 @@ export default function KpiCard({
   trendType = 'up', // up, down, neutral
   iconColorClass = 'text-accent-primary bg-active',
   className = '',
+  isLoading = false,
   onClick
 }) {
+  if (isLoading) {
+    return (
+      <div className={`glass-panel p-6 rounded-2xl flex flex-col justify-between min-h-[140px] animate-pulse ${className}`}>
+        <div className="flex items-start justify-between w-full">
+          <div className="w-12 h-12 bg-subtle rounded-xl" />
+          <div className="w-24 h-4 bg-subtle rounded-md" />
+        </div>
+        <div className="mt-4 flex flex-col gap-1.5">
+          <div className="w-32 h-8 bg-subtle rounded-lg" />
+          <div className="w-20 h-3 bg-subtle rounded-md" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       onClick={onClick}

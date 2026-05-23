@@ -10,6 +10,7 @@ export default function Print() {
   const { showSuccess, showError } = useNotification();
   const { printReceipt } = usePrint();
   const { settings, updateSettings, loadLocalPreferences, language } = useSettingsStore();
+  const [isSavingReceipt, setIsSavingReceipt] = useState(false);
   const isEn = language === 'en';
 
   const [formData, setFormData] = useState({
@@ -50,11 +51,14 @@ export default function Print() {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    setIsSavingReceipt(true);
     try {
       await updateSettings(formData);
       showSuccess(isEn ? 'Receipt settings saved successfully!' : 'تم حفظ إعدادات طابعة الكاشير وتصميم الترويسة بنجاح!');
     } catch (err) {
       showError(isEn ? 'Failed to save settings' : 'فشل حفظ الإعدادات');
+    } finally {
+      setIsSavingReceipt(false);
     }
   };
 
@@ -172,6 +176,7 @@ export default function Print() {
             <Button
               type="submit"
               variant="primary"
+              isLoading={isSavingReceipt}
               className="h-12 px-8 text-xs font-bold"
             >
               {isEn ? 'Save Settings' : 'حفظ تصميم الفواتير'}

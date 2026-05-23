@@ -60,7 +60,7 @@ export default function Reports() {
       const chartsRes = await getReportsChartsApi(period);
       setChartsData(chartsRes);
 
-      const logsRes = await getSalesApi();
+      const logsRes = await getSalesApi(period);
       setSalesLogs(logsRes);
     } catch (e) {
       showError(isEn ? 'Failed to load reports and analytics' : 'فشل تحميل التقارير والتحليلات');
@@ -71,6 +71,16 @@ export default function Reports() {
 
   useEffect(() => {
     loadReports();
+  }, [period]);
+
+  useEffect(() => {
+    const handleNewSale = () => loadReports();
+    window.addEventListener('sale-completed', handleNewSale);
+    window.addEventListener('dashboard-refresh', handleNewSale);
+    return () => {
+      window.removeEventListener('sale-completed', handleNewSale);
+      window.removeEventListener('dashboard-refresh', handleNewSale);
+    };
   }, [period]);
 
   const handleExportPDF = () => {

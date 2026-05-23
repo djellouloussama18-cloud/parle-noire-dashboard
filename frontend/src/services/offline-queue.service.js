@@ -1,3 +1,5 @@
+import { supabase } from '../lib/supabase';
+
 const QUEUE_DB = 'ParleNoireQueue';
 const QUEUE_VERSION = 1;
 const QUEUE_STORE = 'actions';
@@ -77,31 +79,61 @@ async function markFailed(id) {
   });
 }
 
+async function flushCreateSale(payload) {
+  const { items, ...saleData } = payload;
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: sale, error: saleError } = await supabase.from('sales').insert({
+    ...saleData,
+    user_id: user?.id,
+  }).select().single();
+  if (saleError || !sale) return false;
+  if (items?.length > 0) {
+    const saleItemsToInsert = items.map(item => ({ ...item, sale_id: sale.id }));
+    const { error: itemsError } = await supabase.from('sale_items').insert(saleItemsToInsert);
+    if (itemsError) return false;
+    for (const item of items) {
+      const { data: prod } = await supabase.from('products').select('quantity').eq('id', item.product_id).single();
+      if (prod) {
+        await supabase.from('products').update({ quantity: prod.quantity - item.quantity }).eq('id', item.product_id);
+      }
+    }
+  }
+  return true;
+}
+
 async function flushQueue() {
   if (!navigator.onLine) return { flushed: 0, failed: 0 };
   const items = await getAllQueued();
   let flushed = 0;
   let failed = 0;
   for (const item of items) {
-    if (item.status === 'pending') {
-      try {
+    if (item.status !== 'pending') continue;
+    try {
+      let ok = false;
+      if (item.type === 'CREATE_SALE') {
+        ok = await flushCreateSale(item.payload);
+      } else if (item.url) {
         const response = await fetch(item.url, {
           method: item.method || 'POST',
           headers: { 'Content-Type': 'application/json', ...(item.headers || {}) },
           body: JSON.stringify(item.payload)
         });
-        if (response.ok) {
-          await removeFromQueue(item.id);
-          flushed++;
-        } else {
-          await markFailed(item.id);
-          failed++;
-        }
-      } catch {
+        ok = response.ok;
+      }
+      if (ok) {
+        await removeFromQueue(item.id);
+        flushed++;
+      } else {
         await markFailed(item.id);
         failed++;
       }
+    } catch {
+      await markFailed(item.id);
+      failed++;
     }
+  }
+  if (flushed > 0) {
+    window.dispatchEvent(new CustomEvent('data-synced'));
   }
   return { flushed, failed };
 }
@@ -112,6 +144,7 @@ export function setupOnlineSync() {
     if (result.flushed > 0) {
       const event = new CustomEvent('queue-flushed', { detail: result });
       window.dispatchEvent(event);
+      window.dispatchEvent(new CustomEvent('data-synced'));
     }
   });
 }

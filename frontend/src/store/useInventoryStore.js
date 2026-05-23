@@ -20,6 +20,11 @@ const useInventoryStore = create((set, get) => ({
     }
   },
 
+  loadProducts: async () => {
+    const { fetchProducts } = get();
+    return fetchProducts();
+  },
+
   fetchCategories: async () => {
     try {
       const data = await getCategoriesApi();

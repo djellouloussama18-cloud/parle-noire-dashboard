@@ -93,50 +93,68 @@ const useSettingsStore = create(
       },
 
       loadSettings: async (force = false) => {
-        if (get().isLoaded && !force) return;
         try {
           const { data, error } = await supabase.from('settings').select('key, value');
           if (error) throw error;
 
           const flat = {};
           (data || []).forEach(({ key, value }) => {
-            if (key === 'store_name')          flat.storeName = value;
-            if (key === 'store_phone')         flat.storePhone = value;
-            if (key === 'store_address')       flat.storeAddress = value;
-            if (key === 'store_email')         flat.storeEmail = value;
-            if (key === 'currency')            flat.currency = value;
-            if (key === 'tva_rate')            flat.tvaRate = parseFloat(value) || 0;
-            if (key === 'store_logo')          flat.logoUrl = value;
-            if (key === 'receipt_header')      flat.receiptHeader = value;
-            if (key === 'receipt_footer')      flat.receiptFooter = value;
-            if (key === 'receipt_show_sku')    flat.receiptShowSku = value === 'true';
-            if (key === 'receipt_show_price')  flat.receiptShowPrice = value === 'true';
-            if (key === 'receipt_show_tva')    flat.receiptShowTva = value === 'true';
-            if (key === 'receipt_show_qrcode') flat.receiptShowQrcode = value === 'true';
+            switch (key) {
+              case 'store_name':          flat.storeName = value; break;
+              case 'store_phone':         flat.storePhone = value; break;
+              case 'store_address':       flat.storeAddress = value; break;
+              case 'store_email':         flat.storeEmail = value; break;
+              case 'currency':            flat.currency = value; break;
+              case 'tva_rate':            flat.tvaRate = parseFloat(value) || 0; break;
+              case 'store_logo':          flat.logoUrl = value; break;
+              case 'receipt_header':      flat.receiptHeader = value; break;
+              case 'receipt_footer':      flat.receiptFooter = value; break;
+              case 'receipt_show_sku':    flat.receiptShowSku = value === 'true'; break;
+              case 'receipt_show_price':  flat.receiptShowPrice = value === 'true'; break;
+              case 'receipt_show_tva':    flat.receiptShowTva = value === 'true'; break;
+              case 'receipt_show_qrcode': flat.receiptShowQrcode = value === 'true'; break;
+            }
           });
 
-          // First set(): flush raw mapped flat fields into state
-          set({ ...flat, isLoaded: true });
-
-          // Second set(): now that flat state is fresh, build settings from it
-          set({ settings: get()._buildSettings() });
+          set({
+            ...flat,
+            isLoaded: true,
+            settings: {
+              store_name:         flat.storeName ?? '',
+              store_address:      flat.storeAddress ?? '',
+              store_phone:        flat.storePhone ?? '',
+              store_email:        flat.storeEmail ?? '',
+              currency:           flat.currency ?? '',
+              tva_rate:           String(flat.tvaRate ?? 0),
+              store_logo:         flat.logoUrl ?? '',
+              receipt_header:     flat.receiptHeader ?? '',
+              receipt_footer:     flat.receiptFooter ?? '',
+              receipt_show_sku:   flat.receiptShowSku ?? true,
+              receipt_show_price: flat.receiptShowPrice ?? true,
+              receipt_show_tva:   flat.receiptShowTva ?? true,
+              receipt_show_qrcode:flat.receiptShowQrcode ?? true,
+            }
+          });
         } catch (err) {
           console.error('Failed to load settings:', err);
         }
       },
 
       saveSettings: async (newSettings) => {
-        set(newSettings);
-        get()._syncSettings();
-
         const keyMap = {
-          storeName:    'store_name',
-          storePhone:   'store_phone',
-          storeAddress: 'store_address',
-          storeEmail:   'store_email',
-          currency:     'currency',
-          tvaRate:      'tva_rate',
-          logoUrl:      'store_logo',
+          storeName:          'store_name',
+          storePhone:         'store_phone',
+          storeAddress:       'store_address',
+          storeEmail:         'store_email',
+          currency:           'currency',
+          tvaRate:            'tva_rate',
+          logoUrl:            'store_logo',
+          receiptHeader:      'receipt_header',
+          receiptFooter:      'receipt_footer',
+          receiptShowSku:     'receipt_show_sku',
+          receiptShowPrice:   'receipt_show_price',
+          receiptShowTva:     'receipt_show_tva',
+          receiptShowQrcode:  'receipt_show_qrcode',
         };
 
         for (const [stateKey, dbKey] of Object.entries(keyMap)) {
@@ -147,6 +165,9 @@ const useSettingsStore = create(
             );
           }
         }
+
+        await get().loadSettings(true);
+        localStorage.setItem('pos_settings', JSON.stringify(get().settings));
       },
 
       // ── Legacy Actions (keep for backward compat) ──────────────────
@@ -177,20 +198,47 @@ const useSettingsStore = create(
       updateSettings: async (newSettings) => {
         set({ isLoading: true });
         try {
-          // Persist to Supabase using upsert
-          for (const [key, value] of Object.entries(newSettings)) {
-            await supabase.from('settings').upsert(
-              { key, value: String(value) },
-              { onConflict: 'key' }
-            );
+          const keyMap = {
+            store_name:         'store_name',
+            store_phone:        'store_phone',
+            store_address:      'store_address',
+            store_email:        'store_email',
+            currency:           'currency',
+            tva_rate:           'tva_rate',
+            store_logo:         'store_logo',
+            receipt_header:     'receipt_header',
+            receipt_footer:     'receipt_footer',
+            receipt_show_sku:   'receipt_show_sku',
+            receipt_show_price: 'receipt_show_price',
+            receipt_show_tva:   'receipt_show_tva',
+            receipt_show_qrcode:'receipt_show_qrcode',
+            storeName:          'store_name',
+            storePhone:         'store_phone',
+            storeAddress:       'store_address',
+            storeEmail:         'store_email',
+            tvaRate:            'tva_rate',
+            logoUrl:            'store_logo',
+            receiptHeader:      'receipt_header',
+            receiptFooter:      'receipt_footer',
+            receiptShowSku:     'receipt_show_sku',
+            receiptShowPrice:   'receipt_show_price',
+            receiptShowTva:     'receipt_show_tva',
+            receiptShowQrcode:  'receipt_show_qrcode',
+          };
+
+          for (const [stateKey, dbKey] of Object.entries(keyMap)) {
+            if (newSettings[stateKey] !== undefined) {
+              await supabase.from('settings').upsert(
+                { key: dbKey, value: String(newSettings[stateKey]) },
+                { onConflict: 'key' }
+              );
+            }
           }
 
-          // Re-sync from DB to get the authoritative state
+          set({ isLoaded: false });
           await get().loadSettings(true);
-
-          // Use get() to read the latest flat state, then merge newSettings on top
-          const merged = { ...get()._buildSettings(), ...newSettings };
-          set({ settings: merged, isLoading: false });
+          localStorage.setItem('pos_settings', JSON.stringify(get().settings));
+          set({ isLoading: false });
           return true;
         } catch (err) {
           console.error('Failed to update settings:', err);
@@ -224,7 +272,21 @@ const useSettingsStore = create(
           const local = localStorage.getItem('pos_settings');
           if (local && local !== 'undefined') {
             const parsed = JSON.parse(local);
-            set({ settings: parsed });
+            set({
+              settings: parsed,
+              storeName: parsed.store_name ?? get().storeName,
+              storePhone: parsed.store_phone ?? get().storePhone,
+              storeAddress: parsed.store_address ?? get().storeAddress,
+              currency: parsed.currency ?? get().currency,
+              tvaRate: parseFloat(parsed.tva_rate) || get().tvaRate,
+              logoUrl: parsed.store_logo ?? get().logoUrl,
+              receiptHeader: parsed.receipt_header ?? get().receiptHeader,
+              receiptFooter: parsed.receipt_footer ?? get().receiptFooter,
+              receiptShowSku: parsed.receipt_show_sku ?? get().receiptShowSku,
+              receiptShowPrice: parsed.receipt_show_price ?? get().receiptShowPrice,
+              receiptShowTva: parsed.receipt_show_tva ?? get().receiptShowTva,
+              receiptShowQrcode: parsed.receipt_show_qrcode ?? get().receiptShowQrcode,
+            });
           }
         } catch (e) {
           console.error('Error parsing pos_settings from localStorage:', e);

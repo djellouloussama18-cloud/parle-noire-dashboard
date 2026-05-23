@@ -30,7 +30,7 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState('store'); // store, security, theme, backup, about
 
   // 1. Store Details State
-  const { settings, updateSettings, loadLocalPreferences, accentColor, setAccentColor, fontSize, setFontSize, language } = useSettingsStore();
+  const { settings, updateSettings, loadSettings, loadLocalPreferences, accentColor, setAccentColor, fontSize, setFontSize, language } = useSettingsStore();
   const isEn = language === 'en';
 
   const [storeData, setStoreData] = useState({
@@ -50,6 +50,7 @@ export default function Settings() {
   const [logoPreview, setLogoPreview] = useState(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [currentLogo, setCurrentLogo] = useState('');
+  const [isSavingStore, setIsSavingStore] = useState(false);
 
   useEffect(() => {
     const handler = (e) => setCurrentLogo(`${e.detail.newUrl}?t=${Date.now()}`);
@@ -59,6 +60,10 @@ export default function Settings() {
 
   useEffect(() => {
     loadLocalPreferences();
+  }, []);
+
+  useEffect(() => {
+    loadSettings(true);
   }, []);
 
   useEffect(() => {
@@ -82,6 +87,7 @@ export default function Settings() {
 
   const handleStoreSubmit = async (e) => {
     e.preventDefault();
+    setIsSavingStore(true);
     try {
       await updateSettings(storeData);
       // Re-read fresh values from store to avoid stale closure references
@@ -103,6 +109,8 @@ export default function Settings() {
       showSuccess(isEn ? 'Store details updated successfully!' : 'تم تحديث معلومات المتجر بنجاح!');
     } catch (err) {
       showError(isEn ? 'Failed to update store details' : 'فشل تحديث البيانات');
+    } finally {
+      setIsSavingStore(false);
     }
   };
 
@@ -357,7 +365,10 @@ export default function Settings() {
                 <Input
                   label={isEn ? "Store Name" : "اسم متجر الأزياء"}
                   value={storeData.store_name}
-                  onChange={(e) => setStoreData(prev => ({ ...prev, store_name: e.target.value }))}
+                  onChange={(e) => {
+                    setStoreData(prev => ({ ...prev, store_name: e.target.value }));
+                    useSettingsStore.setState({ storeName: e.target.value });
+                  }}
                   required
                 />
                 <Input
@@ -439,7 +450,7 @@ export default function Settings() {
 
 
               <div className={`flex mt-2 ${isEn ? 'justify-start' : 'justify-end'}`}>
-                <Button type="submit" className="px-8 text-xs font-bold h-12">
+                <Button type="submit" isLoading={isSavingStore} className="px-8 text-xs font-bold h-12">
                   {isEn ? 'Save Details' : 'حفظ معلومات المتجر'}
                 </Button>
               </div>
@@ -509,7 +520,7 @@ export default function Settings() {
               </div>
 
               <div className={`flex mt-2 ${isEn ? 'justify-start' : 'justify-end'}`}>
-                <Button type="submit" className="px-8 text-xs font-bold h-12">
+                <Button type="submit" isLoading={isSavingStore} className="px-8 text-xs font-bold h-12">
                   {isEn ? 'Save Receipt Settings' : 'حفظ إعدادات الفاتورة'}
                 </Button>
               </div>
@@ -789,6 +800,19 @@ export default function Settings() {
                   <span>{isEn ? '● Secure password hashing & algorithmic strength evaluation' : '● نظام تشفير وحساب قوة كلمة المرور بالخوارزميات'}</span>
                   <span>{isEn ? '● Auto-scheduled robust database backups' : '● حماية وحفظ النسخ الاحتياطية المتكررة التلقائية'}</span>
                 </div>
+              </div>
+
+              <div className={`flex flex-col gap-3 border-t border-light pt-5 mt-4 leading-relaxed text-xs font-bold text-text-secondary ${isEn ? 'text-left' : 'text-right'}`}>
+                <span className={`text-text-primary text-[13px] font-black border-b border-text-disabled/10 pb-1 flex items-center gap-2 ${isEn ? '' : 'flex-row-reverse'}`}>
+                  <span>🔒</span>
+                  <span>{isEn ? 'Privacy Policy' : 'سياسة الخصوصية'}</span>
+                </span>
+                <span>{isEn ? 'All data entered in this system is the exclusive property of the merchant.' : 'جميع البيانات المدخلة في هذا النظام هي ملك حصري للتاجر.'}</span>
+                <span>{isEn ? 'No data is shared with third parties.' : 'لا يتم مشاركة أي بيانات مع أطراف ثالثة.'}</span>
+                <span>{isEn ? 'Data is stored locally on the device and on a secure encrypted database.' : 'يتم تخزين البيانات محلياً على الجهاز وعلى قاعدة بيانات آمنة مشفرة.'}</span>
+                <span>{isEn ? 'Passwords are encrypted and cannot be accessed by anyone.' : 'كلمات المرور مشفرة ولا يمكن لأحد الاطلاع عليها.'}</span>
+                <span>{isEn ? 'The merchant has the right to delete all their data at any time through the backup page.' : 'يحق للتاجر حذف جميع بياناته في أي وقت من خلال صفحة النسخ الاحتياطي.'}</span>
+                <span>{isEn ? 'This system is intended for internal commercial use only.' : 'هذا النظام مخصص للاستخدام التجاري الداخلي فقط.'}</span>
               </div>
 
               <div className="border-t border-light pt-5 mt-4 text-center text-[10px] font-black text-text-disabled select-none">

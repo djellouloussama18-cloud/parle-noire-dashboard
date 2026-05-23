@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from './store/useAuthStore';
 import useSettingsStore from './store/useSettingsStore';
+import useInventoryStore from './store/useInventoryStore';
+import useSalesStore from './store/useSalesStore';
 
 // Layout & UI
 import MainLayout from './components/layout/MainLayout';
@@ -59,9 +61,6 @@ import Print from './pages/Print';
 import Settings from './pages/Settings';
 import Customers from './pages/Customers';
 import Notes from './pages/Notes';
-import TournamentFeedScreen from './screens/Tournaments/TournamentFeedScreen';
-import TournamentDetailScreen from './screens/Tournaments/TournamentDetailScreen';
-import CreateTournamentScreen from './screens/Organizer/CreateTournamentScreen';
 
 // Protected Route Guard
 function ProtectedRoute({ children }) {
@@ -89,8 +88,15 @@ export default function App() {
   useEffect(() => {
     if (token && !isLoginPage) {
       loadSettings(true);
+      
+      // Fix 1: After auth confirmed, fire these in parallel — don't await, just warm the cache
+      Promise.all([
+        useInventoryStore.getState().loadProducts(),
+        useSalesStore.getState().loadDashboardStats(),
+        useSettingsStore.getState().loadSettings(),
+      ]).catch(err => console.error('Prefetch failed:', err));
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     if (accentColor) {
@@ -217,38 +223,6 @@ export default function App() {
             <ProtectedRoute>
               <MainLayout>
                 <Notes />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Tournament Screens */}
-        <Route
-          path="/tournaments"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <TournamentFeedScreen />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tournaments/:id"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <TournamentDetailScreen />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/organizer/create"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <CreateTournamentScreen />
               </MainLayout>
             </ProtectedRoute>
           }

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { offlineDB } from '../services/db.service';
+import { addToQueue } from '../services/offline-queue.service';
 import useNotification from '../hooks/useNotification';
 import useSettingsStore from '../store/useSettingsStore';
 import { Users, UserPlus, Search, Edit, Trash2 } from 'lucide-react';
@@ -28,6 +30,12 @@ export default function Customers() {
   const fetchCustomers = async () => {
     setIsLoading(true);
     try {
+      if (!navigator.onLine) {
+        const data = await offlineDB.getAll('customers');
+        setCustomers(data || []);
+        setIsLoading(false);
+        return;
+      }
       const { data, error } = await supabase.from('customers').select('*').order('id', { ascending: false });
       if (error) throw error;
       setCustomers(data || []);
@@ -67,6 +75,24 @@ export default function Customers() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      if (!navigator.onLine) {
+        if (editingCustomer) {
+          const data = { ...formData, id: editingCustomer.id };
+          await addToQueue({ type: 'updateCustomer', payload: data });
+          await offlineDB.put('customers', data);
+          showSuccess(isEn ? 'Customer updated offline' : 'تم تحديث بيانات الزبون (بدون اتصال)');
+        } else {
+          const tempId = Date.now();
+          const data = { ...formData, id: tempId, total_purchases: 0, created_at: new Date().toISOString() };
+          await addToQueue({ type: 'createCustomer', payload: data });
+          await offlineDB.put('customers', data);
+          showSuccess(isEn ? 'Customer added offline' : 'تم إضافة الزبون (بدون اتصال)');
+        }
+        fetchCustomers();
+        setIsModalOpen(false);
+        return;
+      }
+
       if (editingCustomer) {
         const { error } = await supabase.from('customers').update(formData).eq('id', editingCustomer.id);
         if (error) throw error;
@@ -93,6 +119,14 @@ export default function Customers() {
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
+          if (!navigator.onLine) {
+            await addToQueue({ type: 'deleteCustomer', payload: { id } });
+            await offlineDB.remove('customers', id);
+            showSuccess(isEn ? 'Customer deleted offline' : 'تم حذف الزبون (بدون اتصال)');
+            fetchCustomers();
+            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            return;
+          }
           const { error } = await supabase.from('customers').delete().eq('id', id);
           if (error) throw error;
           showSuccess(isEn ? 'Customer deleted successfully' : 'تم حذف الزبون بنجاح');

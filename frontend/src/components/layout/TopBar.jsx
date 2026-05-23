@@ -4,6 +4,7 @@ import useAuthStore from '../../store/useAuthStore';
 import useInventoryStore from '../../store/useInventoryStore';
 import useCartStore from '../../store/useCartStore';
 import useSettingsStore from '../../store/useSettingsStore';
+import ConnectionStatus from '../ui/ConnectionStatus';
 import {
   Menu,
   Search,
@@ -24,7 +25,7 @@ export default function TopBar({ isSidebarExpanded, setIsSidebarExpanded }) {
   const logout = useAuthStore(state => state.logout);
   const user = useAuthStore(state => state.user);
 
-  const { themeMode, language, setThemeMode, setLanguage } = useSettingsStore();
+  const { themeMode, language, setThemeMode, setLanguage, storeName } = useSettingsStore();
   const isEn = language === 'en';
 
   const searchInputRef = useRef(null);
@@ -106,18 +107,28 @@ export default function TopBar({ isSidebarExpanded, setIsSidebarExpanded }) {
       
       {/* Right side in RTL: Hamburger & Brand Clock */}
       <div className={`flex items-center gap-4 ${isEn ? 'flex-row-reverse' : ''}`}>
-        {/* Toggle sidebar */}
+        {/* Mobile hamburger */}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('toggle-sidebar'))}
+          className="md:hidden p-1.5 text-text-secondary hover:text-accent-primary hover:bg-hover rounded-xl transition-all duration-200 focus:outline-none"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        {/* Desktop sidebar toggle */}
         <button
           onClick={() => setIsSidebarExpanded(prev => !prev)}
-          className="p-2 text-text-secondary hover:text-accent-primary hover:bg-hover rounded-xl transition-all duration-200 focus:outline-none"
+          className="hidden md:block p-1.5 md:p-2 text-text-secondary hover:text-accent-primary hover:bg-hover rounded-xl transition-all duration-200 focus:outline-none"
         >
-          <Menu className="w-5.5 h-5.5" />
+          <Menu className="w-5 h-5" />
         </button>
 
         {/* Real-time Digital Clock & Date */}
         <div className={`flex flex-col ${isEn ? 'text-left' : 'text-right'} hidden xs:flex`}>
           <span className="text-xs md:text-sm font-extrabold text-accent-primary tracking-wider tabular-nums">
             {currentTime}
+          </span>
+          <span className="text-[8px] md:text-[10px] font-bold text-text-secondary leading-tight">
+            {storeName}
           </span>
           <span className="text-[8px] md:text-[10px] font-semibold text-text-secondary hidden sm:block">
             {currentDate}
@@ -126,7 +137,7 @@ export default function TopBar({ isSidebarExpanded, setIsSidebarExpanded }) {
       </div>
 
       {/* Middle: Search Box */}
-      <div className="relative max-w-lg w-full hidden md:block">
+      <div className="relative max-w-lg w-full hidden md:block mx-4">
         <div className={`absolute top-1/2 -translate-y-1/2 text-text-secondary ${isEn ? 'left-4' : 'right-4'}`}>
           <Search className="w-5 h-5" />
         </div>
@@ -143,26 +154,26 @@ export default function TopBar({ isSidebarExpanded, setIsSidebarExpanded }) {
         </div>
       </div>
 
-      {/* Left side in RTL: Tools, Notifications & User Avatar */}
+      {/* Connection Status & Tools Section */}
       <div className={`flex items-center gap-2 md:gap-4 ${isEn ? 'flex-row-reverse' : ''}`}>
-        
         {/* Language Toggle */}
+        <ConnectionStatus />
         <button
           onClick={toggleLanguage}
-          className="p-2 text-text-secondary hover:text-accent-primary hover:bg-hover rounded-xl transition-all duration-200 focus:outline-none flex items-center gap-1"
+          className="p-1.5 md:p-2 text-text-secondary hover:text-accent-primary hover:bg-hover rounded-xl transition-all duration-200 focus:outline-none flex items-center gap-1"
           title={language === 'ar' ? 'English' : 'العربية'}
         >
-          <Globe className="w-5 h-5" />
+          <Globe className="w-[18px] md:w-5 h-[18px] md:h-5" />
           <span className="text-[10px] font-bold uppercase">{language === 'ar' ? 'en' : 'ar'}</span>
         </button>
 
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
-          className="p-2 text-text-secondary hover:text-accent-primary hover:bg-hover rounded-xl transition-all duration-200 focus:outline-none"
+          className="p-1.5 md:p-2 text-text-secondary hover:text-accent-primary hover:bg-hover rounded-xl transition-all duration-200 focus:outline-none"
           title={themeMode === 'dark' ? 'Light Mode' : 'Dark Mode'}
         >
-          {themeMode === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          {themeMode === 'dark' ? <Sun className="w-[18px] md:w-5 h-[18px] md:h-5" /> : <Moon className="w-[18px] md:w-5 h-[18px] md:h-5" />}
         </button>
 
         {/* Notifications bell */}
@@ -172,9 +183,9 @@ export default function TopBar({ isSidebarExpanded, setIsSidebarExpanded }) {
               setIsNotifyOpen(prev => !prev);
               setIsProfileOpen(false);
             }}
-            className="p-2.5 text-text-secondary hover:text-accent-primary hover:bg-hover rounded-xl relative transition-all duration-200 focus:outline-none"
+            className="p-2 md:p-2.5 text-text-secondary hover:text-accent-primary hover:bg-hover rounded-xl relative transition-all duration-200 focus:outline-none"
           >
-            <Bell className="w-5 h-5" />
+            <Bell className="w-[18px] md:w-5 h-[18px] md:h-5" />
             {notifications.length > 0 && (
               <span className="absolute top-1.5 left-1.5 w-4 h-4 rounded-full bg-status-danger text-[9px] font-black text-on-accent flex items-center justify-center animate-pulse">
                 {notifications.length}
@@ -218,14 +229,14 @@ export default function TopBar({ isSidebarExpanded, setIsSidebarExpanded }) {
               setIsProfileOpen(prev => !prev);
               setIsNotifyOpen(false);
             }}
-            className="flex items-center gap-2 p-1 px-2.5 bg-subtle border border-light rounded-full hover:border-accent-primary transition-all duration-200 focus:outline-none"
+            className="flex items-center gap-1 md:gap-2 p-1 px-1.5 md:px-2.5 bg-subtle border border-light rounded-full hover:border-accent-primary transition-all duration-200 focus:outline-none"
           >
-            <ChevronDown className="w-4 h-4 text-text-secondary" />
+            <ChevronDown className="w-3.5 md:w-4 h-3.5 md:h-4 text-text-secondary" />
             <div className={`flex flex-col hidden sm:flex ${isEn ? 'text-left' : 'text-right'}`}>
               <span className="text-xs font-bold text-text-primary">{user?.username || (isEn ? 'Admin' : 'المدير')}</span>
               <span className="text-[9px] text-text-secondary font-medium">{isEn ? 'System Admin' : 'مدير النظام'}</span>
             </div>
-            <div className="w-8 h-8 rounded-full bg-accent-primary border-2 border-accent-primary/20 flex items-center justify-center font-extrabold text-on-accent text-xs">
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-accent-primary border-2 border-accent-primary/20 flex items-center justify-center font-extrabold text-on-accent text-xs">
               {user?.username?.substring(0, 2).toUpperCase() || 'AD'}
             </div>
           </button>

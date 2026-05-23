@@ -160,6 +160,21 @@ export default function Inventory() {
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+
+    const handleSync = () => {
+      fetchProducts();
+      fetchCategories();
+    };
+
+    window.addEventListener('products-synced', handleSync);
+    window.addEventListener('data-synced', handleSync);
+    window.addEventListener('dashboard-refresh', handleSync);
+
+    return () => {
+      window.removeEventListener('products-synced', handleSync);
+      window.removeEventListener('data-synced', handleSync);
+      window.removeEventListener('dashboard-refresh', handleSync);
+    };
   }, []);
 
   // Filter products catalog

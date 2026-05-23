@@ -14,12 +14,14 @@ export default function ConnectionStatus() {
     window.addEventListener('offline', handleOffline);
     window.addEventListener('queue-flushed', handleSyncEnd);
     window.addEventListener('sync-started', handleSyncStart);
+    window.addEventListener('products-synced', handleSyncEnd);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('queue-flushed', handleSyncEnd);
       window.removeEventListener('sync-started', handleSyncStart);
+      window.removeEventListener('products-synced', handleSyncEnd);
     };
   }, []);
 

@@ -14,8 +14,9 @@ const useInventoryStore = create((set, get) => ({
   fetchProducts: async () => {
     set({ isLoading: true });
     try {
-      const data = await getProductsApi();
-      set({ products: data, isLoading: false });
+      const { data, error } = await supabase.from('products').select('*, categories(*)').order('created_at', { ascending: false });
+      if (error) throw error;
+      set({ products: data || [], isLoading: false });
     } catch (err) {
       set({ error: 'فشل تحميل المنتجات', isLoading: false });
     }
@@ -28,8 +29,9 @@ const useInventoryStore = create((set, get) => ({
 
   fetchCategories: async () => {
     try {
-      const data = await getCategoriesApi();
-      set({ categories: data });
+      const { data, error } = await supabase.from('categories').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      set({ categories: data || [] });
     } catch (err) {
       console.error('Error fetching categories:', err);
     }

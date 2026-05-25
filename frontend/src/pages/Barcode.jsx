@@ -10,7 +10,7 @@ import Input from '../components/ui/Input';
 export default function Barcode() {
   const { showSuccess, showError } = useNotification();
   const { products, fetchProducts } = useInventoryStore();
-  const { settings, fetchSettings, language } = useSettingsStore();
+  const { settings, language } = useSettingsStore();
   const isEn = language === 'en';
 
   const [selectedProductId, setSelectedProductId] = useState('');
@@ -25,7 +25,6 @@ export default function Barcode() {
 
   useEffect(() => {
     fetchProducts();
-    fetchSettings();
   }, []);
 
   const filteredProducts = useMemo(() => {

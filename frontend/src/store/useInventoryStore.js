@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { supabase } from '../lib/supabase';
 import {
   getProductsApi, createProductApi, updateProductApi, deleteProductApi,
   getCategoriesApi, createCategoryApi, updateCategoryApi, deleteCategoryApi
@@ -104,7 +105,17 @@ const useInventoryStore = create((set, get) => ({
       const msg = err.response?.data?.message || 'حدث خطأ أثناء حذف الفئة';
       throw new Error(msg);
     }
-  }
+  },
+
+  subscribeToProducts: () => {
+    const channel = supabase.channel('products-realtime')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        () => { get().loadProducts(); }
+      )
+      .subscribe();
+    return channel;
+  },
 }));
 
 export default useInventoryStore;

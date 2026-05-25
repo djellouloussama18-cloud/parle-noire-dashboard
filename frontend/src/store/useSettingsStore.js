@@ -299,7 +299,17 @@ const useSettingsStore = create(
         if (theme) set({ themeMode: theme });
         const lang = localStorage.getItem('pos_language');
         if (lang) set({ language: lang });
-      }
+      },
+
+      subscribeToSettings: () => {
+        const channel = supabase.channel('settings-realtime')
+          .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'settings' },
+            () => { get().loadSettings(true); }
+          )
+          .subscribe();
+        return channel;
+      },
     }),
     {
       name: 'parle-nior-settings',

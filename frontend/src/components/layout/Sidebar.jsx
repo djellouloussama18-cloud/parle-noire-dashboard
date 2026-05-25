@@ -5,6 +5,7 @@ import useCartStore from '../../store/useCartStore';
 import useInventoryStore from '../../store/useInventoryStore';
 import useSettingsStore from '../../store/useSettingsStore';
 import useNotesStore from '../../store/useNotesStore';
+import { supabase } from '../../lib/supabase';
 import ConnectionStatus from '../ui/ConnectionStatus';
 import {
   Home,
@@ -49,8 +50,13 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 60000);
-    return () => clearInterval(interval);
+    const channel = supabase.channel('notes-realtime')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'notes' },
+        () => { fetchUnreadCount(); }
+      )
+      .subscribe();
+    return () => { channel.unsubscribe(); };
   }, []);
 
   const [isHovered, setIsHovered] = useState(false);

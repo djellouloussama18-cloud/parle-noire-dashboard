@@ -63,7 +63,9 @@ export default function Settings() {
   }, []);
 
   useEffect(() => {
-    loadSettings(true);
+    if (!useSettingsStore.getState().isLoaded) {
+      loadSettings(true);
+    }
   }, []);
 
   useEffect(() => {

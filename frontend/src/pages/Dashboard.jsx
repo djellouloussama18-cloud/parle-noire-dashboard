@@ -45,12 +45,16 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    // Fix 3: Show stale data immediately, refresh in background
-    loadData(false, timeFilter);
+    fetchProducts();
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    loadDashboardStats(false, timeFilter);
   }, [timeFilter]);
 
   useEffect(() => {
-    const handleRefresh = () => loadData(true, timeFilter);
+    const handleRefresh = () => loadDashboardStats(true, timeFilter);
     window.addEventListener('sale-completed', handleRefresh);
     window.addEventListener('dashboard-refresh', handleRefresh);
     return () => {

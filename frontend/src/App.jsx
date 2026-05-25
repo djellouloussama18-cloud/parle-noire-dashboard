@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from './store/useAuthStore';
 import useSettingsStore from './store/useSettingsStore';
@@ -80,21 +80,36 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
-  const { accentColor, fontSize, themeMode, language, loadSettings } = useSettingsStore();
+  const { accentColor, fontSize, themeMode, language } = useSettingsStore();
   const token = useAuthStore((state) => state.token);
   const isLoginPage = window.location.pathname === '/login';
+  const hasInitialized = useRef(false);
+  const settingsChannelRef = useRef(null);
+  const productsChannelRef = useRef(null);
 
-  // Apply theme to CSS variables on mount and whenever they change
+  // Single initialization on auth — runs exactly once per session
   useEffect(() => {
+    if (hasInitialized.current) return;
+
     if (token && !isLoginPage) {
-      loadSettings(true);
-      
-      // Fix 1: After auth confirmed, fire these in parallel — don't await, just warm the cache
+      hasInitialized.current = true;
+
       Promise.all([
         useInventoryStore.getState().loadProducts(),
         useSalesStore.getState().loadDashboardStats(),
         useSettingsStore.getState().loadSettings(),
-      ]).catch(err => console.error('Prefetch failed:', err));
+      ]).then(() => {
+        settingsChannelRef.current = useSettingsStore.getState().subscribeToSettings();
+        productsChannelRef.current = useInventoryStore.getState().subscribeToProducts();
+      }).catch(err => console.error('Prefetch failed:', err));
+    }
+
+    if (!token) {
+      hasInitialized.current = false;
+      settingsChannelRef.current?.unsubscribe();
+      settingsChannelRef.current = null;
+      productsChannelRef.current?.unsubscribe();
+      productsChannelRef.current = null;
     }
   }, [token]);
 

@@ -1,6 +1,7 @@
-import { supabase } from '../lib/supabase';
 import { offlineDB } from '../services/db.service';
 import { addToQueue } from '../services/offline-queue.service';
+
+import { API_BASE } from './config';
 
 function getDateRange(period) {
   if (!period) return null;
@@ -33,6 +34,14 @@ function getDateRange(period) {
   return { start: start.toISOString(), end: now.toISOString() };
 }
 
+function getAuthHeaders() {
+  return {};
+}
+
+function getAuthHeadersJson() {
+  return { 'Content-Type': 'application/json' };
+}
+
 export const getSalesApi = async (period) => {
   const dateRange = getDateRange(period);
   if (!navigator.onLine) {
@@ -42,13 +51,31 @@ export const getSalesApi = async (period) => {
       : allData;
     return data.map(sale => ({ ...sale, items: sale.sale_items || sale.items || [] }));
   }
-  let query = supabase.from('sales').select('*, sale_items(*)').order('id', { ascending: false });
-  if (dateRange) {
-    query = query.gte('created_at', dateRange.start);
+
+  try {
+    const url = period
+      ? `${API_BASE}/api/sales?period=${encodeURIComponent(period)}`
+      : `${API_BASE}/api/sales`;
+
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to fetch sales'}`);
+    }
+
+    const json = await response.json();
+    const data = json.data || json;
+    for (const sale of data) {
+      await offlineDB.put('sales', { ...sale, sale_items: sale.items });
+    }
+    return data;
+  } catch (error) {
+    console.error('getSales error:', error);
+    throw error;
   }
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return (data || []).map(sale => ({ ...sale, items: sale.sale_items }));
 };
 
 export const createSaleApi = async (saleData) => {
@@ -79,36 +106,119 @@ export const createSaleApi = async (saleData) => {
     return { ...saleRecord, offline: true };
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const response = await fetch(`${API_BASE}/api/sales`, {
+      method: 'POST',
+      headers: getAuthHeadersJson(),
+      body: JSON.stringify({ ...restSaleData, items, invoice_number: invoiceNum }),
+    });
 
-  const { data: sale, error: saleError } = await supabase.from('sales').insert({
-    ...restSaleData,
-    user_id: user?.id,
-    invoice_number: invoiceNum,
-  }).select().single();
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText || 'Server error'}`);
+    }
 
-  if (saleError) throw new Error(saleError.message);
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'فشلت العملية');
+    }
 
-  let saleItems = [];
-  if (items && items.length > 0) {
-    const saleItemsToInsert = items.map(item => ({ ...item, sale_id: sale.id }));
-    const { data: insertedItems, error: itemsError } = await supabase.from('sale_items').insert(saleItemsToInsert).select();
-    if (itemsError) throw new Error(itemsError.message);
-    saleItems = insertedItems || [];
+    const sale = result.data;
+    const saleRecord = { ...sale, sale_items: sale.items };
+    await offlineDB.put('sales', saleRecord);
 
-    for (const item of items) {
-      const { data: prod } = await supabase.from('products').select('quantity').eq('id', item.product_id).single();
-      if (prod) {
-        await supabase.from('products').update({ quantity: prod.quantity - item.quantity }).eq('id', item.product_id);
-        await offlineDB.put('products', { ...prod, quantity: (prod.quantity || 0) - (item.quantity || 0) });
+    if (items && items.length > 0) {
+      for (const item of items) {
+        const prod = await offlineDB.getById('products', item.product_id);
+        if (prod) {
+          await offlineDB.put('products', { ...prod, quantity: (prod.quantity || 0) - (item.quantity || 0) });
+        }
       }
     }
+
+    window.dispatchEvent(new CustomEvent('sale-completed'));
+    window.dispatchEvent(new CustomEvent('data-synced'));
+    return result;
+  } catch (error) {
+    console.error('createSale error:', error);
+    throw error;
+  }
+};
+
+export const getSaleByIdApi = async (saleId) => {
+  const response = await fetch(`${API_BASE}/api/sales/${saleId}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to fetch sale'}`);
+  }
+  const result = await response.json();
+  if (!result.success) throw new Error(result.error || 'فشلت العملية');
+  return result.data;
+};
+
+export const deleteSaleItemApi = async (saleId, itemId) => {
+  const response = await fetch(`${API_BASE}/api/sales/${saleId}/items/${itemId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to delete item'}`);
+  }
+  const result = await response.json();
+  if (!result.success) throw new Error(result.error || 'فشلت العملية');
+  return result.data;
+};
+
+export const deleteSaleApi = async (saleId) => {
+  console.log('[salesApi.deleteSale] Called with id:', saleId);
+  if (!navigator.onLine) {
+    const allSales = await offlineDB.getAll('sales');
+    const sale = allSales.find(s => s.id === saleId);
+    if (!sale) throw new Error('Sale not found');
+    const items = sale.sale_items || sale.items || [];
+    for (const item of items) {
+      const prod = await offlineDB.getById('products', item.product_id);
+      if (prod) {
+        await offlineDB.put('products', { ...prod, quantity: (prod.quantity || 0) + (item.quantity || 0) });
+      }
+    }
+    await offlineDB.remove('sales', saleId);
+    await addToQueue({ type: 'DELETE_SALE', payload: { sale_id: saleId } });
+    window.dispatchEvent(new CustomEvent('data-synced'));
+    return { ...sale, cancelled: true };
   }
 
-  const saleRecord = { ...sale, sale_items: saleItems };
-  await offlineDB.put('sales', saleRecord);
+  try {
+    const response = await fetch(`${API_BASE}/api/sales/${saleId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
 
-  window.dispatchEvent(new CustomEvent('sale-completed'));
-  window.dispatchEvent(new CustomEvent('data-synced'));
-  return sale;
+    if (!response.ok && response.status !== 404) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText || 'Server error'}`);
+    }
+
+    const text = await response.text();
+    const result = JSON.parse(text);
+
+    if (response.status === 404) {
+      result.success = true;
+      result.alreadyDeleted = true;
+    }
+
+    if (!result.success) {
+      throw new Error(result.error || 'فشلت العملية');
+    }
+
+    await offlineDB.remove('sales', saleId);
+    window.dispatchEvent(new CustomEvent('data-synced'));
+    return result;
+  } catch (error) {
+    console.error('deleteSale error:', error);
+    throw error;
+  }
 };

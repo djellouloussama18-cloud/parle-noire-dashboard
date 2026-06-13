@@ -1,0 +1,398 @@
+[
+  {
+    "id": 1,
+    "sale_id": 1,
+    "product_id": 227,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 150.0,
+    "total_price": 150.0
+  },
+  {
+    "id": 2,
+    "sale_id": 1,
+    "product_id": 228,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 150.0,
+    "total_price": 150.0
+  },
+  {
+    "id": 3,
+    "sale_id": 2,
+    "product_id": 111,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 120.0,
+    "total_price": 120.0
+  },
+  {
+    "id": 4,
+    "sale_id": 2,
+    "product_id": 228,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 150.0,
+    "total_price": 150.0
+  },
+  {
+    "id": 5,
+    "sale_id": 3,
+    "product_id": 7,
+    "product_name": "ديور",
+    "quantity": 1,
+    "unit_price": 3700.0,
+    "total_price": 3700.0
+  },
+  {
+    "id": 6,
+    "sale_id": 3,
+    "product_id": 109,
+    "product_name": "بروش",
+    "quantity": 2,
+    "unit_price": 100.0,
+    "total_price": 200.0
+  },
+  {
+    "id": 7,
+    "sale_id": 3,
+    "product_id": 13,
+    "product_name": "ايف سان لوران",
+    "quantity": 1,
+    "unit_price": 1400.0,
+    "total_price": 1400.0
+  },
+  {
+    "id": 8,
+    "sale_id": 3,
+    "product_id": 234,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 200.0,
+    "total_price": 200.0
+  },
+  {
+    "id": 9,
+    "sale_id": 4,
+    "product_id": 118,
+    "product_name": "ليبوكل",
+    "quantity": 1,
+    "unit_price": 250.0,
+    "total_price": 250.0
+  },
+  {
+    "id": 10,
+    "sale_id": 4,
+    "product_id": 99,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 200.0,
+    "total_price": 200.0
+  },
+  {
+    "id": 11,
+    "sale_id": 5,
+    "product_id": 90,
+    "product_name": "خاتم 30 الف",
+    "quantity": 1,
+    "unit_price": 300.0,
+    "total_price": 300.0
+  },
+  {
+    "id": 12,
+    "sale_id": 6,
+    "product_id": 99,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 200.0,
+    "total_price": 200.0
+  },
+  {
+    "id": 13,
+    "sale_id": 7,
+    "product_id": 82,
+    "product_name": "سنسلة 60",
+    "quantity": 1,
+    "unit_price": 600.0,
+    "total_price": 600.0
+  },
+  {
+    "id": 14,
+    "sale_id": 8,
+    "product_id": 102,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 250.0,
+    "total_price": 250.0
+  },
+  {
+    "id": 15,
+    "sale_id": 9,
+    "product_id": 127,
+    "product_name": "سيرتات",
+    "quantity": 1,
+    "unit_price": 250.0,
+    "total_price": 250.0
+  },
+  {
+    "id": 16,
+    "sale_id": 9,
+    "product_id": 100,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 150.0,
+    "total_price": 150.0
+  },
+  {
+    "id": 17,
+    "sale_id": 10,
+    "product_id": 228,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 150.0,
+    "total_price": 150.0
+  },
+  {
+    "id": 18,
+    "sale_id": 11,
+    "product_id": 111,
+    "product_name": "بروش",
+    "quantity": 2,
+    "unit_price": 120.0,
+    "total_price": 240.0
+  },
+  {
+    "id": 19,
+    "sale_id": 12,
+    "product_id": 99,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 200.0,
+    "total_price": 200.0
+  },
+  {
+    "id": 20,
+    "sale_id": 13,
+    "product_id": 127,
+    "product_name": "سيرتات",
+    "quantity": 1,
+    "unit_price": 250.0,
+    "total_price": 250.0
+  },
+  {
+    "id": 21,
+    "sale_id": 13,
+    "product_id": 70,
+    "product_name": "بارير قلب",
+    "quantity": 1,
+    "unit_price": 600.0,
+    "total_price": 600.0
+  },
+  {
+    "id": 22,
+    "sale_id": 14,
+    "product_id": 90,
+    "product_name": "خاتم 30 الف",
+    "quantity": 1,
+    "unit_price": 250.0,
+    "total_price": 250.0
+  },
+  {
+    "id": 23,
+    "sale_id": 15,
+    "product_id": 227,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 150.0,
+    "total_price": 150.0
+  },
+  {
+    "id": 24,
+    "sale_id": 15,
+    "product_id": 100,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 150.0,
+    "total_price": 150.0
+  },
+  {
+    "id": 25,
+    "sale_id": 17,
+    "product_id": 247,
+    "product_name": "خاتم",
+    "quantity": 1,
+    "unit_price": 300.0,
+    "total_price": 300.0
+  },
+  {
+    "id": 26,
+    "sale_id": 18,
+    "product_id": 250,
+    "product_name": "قورمات",
+    "quantity": 1,
+    "unit_price": 500.0,
+    "total_price": 500.0
+  },
+  {
+    "id": 27,
+    "sale_id": 19,
+    "product_id": 24,
+    "product_name": "سنسلة 70",
+    "quantity": 1,
+    "unit_price": 700.0,
+    "total_price": 700.0
+  },
+  {
+    "id": 28,
+    "sale_id": 20,
+    "product_id": 12,
+    "product_name": "عقدة الحب",
+    "quantity": 1,
+    "unit_price": 2300.0,
+    "total_price": 2300.0
+  },
+  {
+    "id": 29,
+    "sale_id": 20,
+    "product_id": 155,
+    "product_name": "KAY ALI",
+    "quantity": 1,
+    "unit_price": 3200.0,
+    "total_price": 3200.0
+  },
+  {
+    "id": 30,
+    "sale_id": 20,
+    "product_id": 73,
+    "product_name": "EVORIA 250ml",
+    "quantity": 1,
+    "unit_price": 700.0,
+    "total_price": 700.0
+  },
+  {
+    "id": 31,
+    "sale_id": 21,
+    "product_id": 120,
+    "product_name": "ليبوكل",
+    "quantity": 1,
+    "unit_price": 500.0,
+    "total_price": 500.0
+  },
+  {
+    "id": 32,
+    "sale_id": 22,
+    "product_id": 120,
+    "product_name": "ليبوكل",
+    "quantity": 1,
+    "unit_price": 500.0,
+    "total_price": 500.0
+  },
+  {
+    "id": 33,
+    "sale_id": 22,
+    "product_id": 118,
+    "product_name": "ليبوكل",
+    "quantity": 2,
+    "unit_price": 250.0,
+    "total_price": 500.0
+  },
+  {
+    "id": 34,
+    "sale_id": 23,
+    "product_id": 130,
+    "product_name": "سيرتات",
+    "quantity": 1,
+    "unit_price": 200.0,
+    "total_price": 200.0
+  },
+  {
+    "id": 35,
+    "sale_id": 23,
+    "product_id": 93,
+    "product_name": "براسلي موناكو",
+    "quantity": 1,
+    "unit_price": 1500.0,
+    "total_price": 1500.0
+  },
+  {
+    "id": 36,
+    "sale_id": 24,
+    "product_id": 118,
+    "product_name": "ليبوكل",
+    "quantity": 1,
+    "unit_price": 250.0,
+    "total_price": 250.0
+  },
+  {
+    "id": 37,
+    "sale_id": 25,
+    "product_id": 254,
+    "product_name": "فلورا",
+    "quantity": 1,
+    "unit_price": 250.0,
+    "total_price": 250.0
+  },
+  {
+    "id": 38,
+    "sale_id": 25,
+    "product_id": 26,
+    "product_name": "سنسلة 70",
+    "quantity": 1,
+    "unit_price": 700.0,
+    "total_price": 700.0
+  },
+  {
+    "id": 39,
+    "sale_id": 25,
+    "product_id": 262,
+    "product_name": "ليبوكل",
+    "quantity": 1,
+    "unit_price": 250.0,
+    "total_price": 250.0
+  },
+  {
+    "id": 40,
+    "sale_id": 26,
+    "product_id": 11,
+    "product_name": "بجعةو",
+    "quantity": 1,
+    "unit_price": 2300.0,
+    "total_price": 2300.0
+  },
+  {
+    "id": 41,
+    "sale_id": 27,
+    "product_id": 227,
+    "product_name": "بروش",
+    "quantity": 1,
+    "unit_price": 150.0,
+    "total_price": 150.0
+  },
+  {
+    "id": 42,
+    "sale_id": 28,
+    "product_id": 131,
+    "product_name": "سيرتات",
+    "quantity": 1,
+    "unit_price": 350.0,
+    "total_price": 350.0
+  },
+  {
+    "id": 43,
+    "sale_id": 29,
+    "product_id": 90,
+    "product_name": "خاتم 30 الف",
+    "quantity": 4,
+    "unit_price": 250.0,
+    "total_price": 1000.0
+  },
+  {
+    "id": 44,
+    "sale_id": 29,
+    "product_id": 115,
+    "product_name": "ڨورمات فان كليف",
+    "quantity": 1,
+    "unit_price": 500.0,
+    "total_price": 500.0
+  }
+]

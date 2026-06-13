@@ -1,11 +1,31 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { supabase } from '../lib/supabase';
+
+import { API_BASE } from '../api/config';
+
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  const headers = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+function getAuthHeadersJson() {
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 const useSettingsStore = create(
   persist(
     (set, get) => ({
-      // Store info
       storeName: 'PARLE NIOR',
       storePhone: '',
       storeAddress: '',
@@ -21,7 +41,6 @@ const useSettingsStore = create(
       receiptShowQrcode: true,
       isLoaded: false,
 
-      // Legacy settings object for backward compatibility (used by Sales, Sidebar, etc.)
       settings: {
         store_name: 'PARLE NIOR',
         store_address: '',
@@ -37,14 +56,12 @@ const useSettingsStore = create(
         store_logo: ''
       },
 
-      // Theme & UI prefs
       accentColor: '#00FF7F',
       fontSize: 'normal',
       themeMode: 'dark',
       language: 'ar',
       isLoading: false,
 
-      // Sync flat fields → legacy settings object (keeps everything in sync)
       _syncSettings: () => {
         const state = get();
         set({
@@ -66,7 +83,6 @@ const useSettingsStore = create(
         });
       },
 
-      // Build the full settings object from flat state
       _buildSettings: () => {
         const state = get();
         return {
@@ -85,8 +101,6 @@ const useSettingsStore = create(
         };
       },
 
-      // ── New Actions ────────────────────────────────────────────────
-
       setLogo: (url) => {
         set({ logoUrl: url });
         get()._syncSettings();
@@ -94,11 +108,20 @@ const useSettingsStore = create(
 
       loadSettings: async (force = false) => {
         try {
-          const { data, error } = await supabase.from('settings').select('key, value');
-          if (error) throw error;
+          const response = await fetch(`${API_BASE}/api/settings/all`, {
+            headers: getAuthHeaders(),
+          });
+
+          if (!response.ok) {
+            console.warn('Failed to load settings from API');
+            return;
+          }
+
+          const data = await response.json();
+          const settingsArray = data || [];
 
           const flat = {};
-          (data || []).forEach(({ key, value }) => {
+          settingsArray.forEach(({ key, value }) => {
             switch (key) {
               case 'store_name':          flat.storeName = value; break;
               case 'store_phone':         flat.storePhone = value; break;
@@ -159,10 +182,15 @@ const useSettingsStore = create(
 
         for (const [stateKey, dbKey] of Object.entries(keyMap)) {
           if (newSettings[stateKey] !== undefined) {
-            await supabase.from('settings').upsert(
-              { key: dbKey, value: String(newSettings[stateKey]) },
-              { onConflict: 'key' }
-            );
+            try {
+              await fetch(`${API_BASE}/api/settings/upsert`, {
+                method: 'POST',
+                headers: getAuthHeadersJson(),
+                body: JSON.stringify({ key: dbKey, value: String(newSettings[stateKey]) }),
+              });
+            } catch (err) {
+              console.error(`Failed to save setting ${dbKey}:`, err);
+            }
           }
         }
 
@@ -170,16 +198,19 @@ const useSettingsStore = create(
         localStorage.setItem('pos_settings', JSON.stringify(get().settings));
       },
 
-      // ── Legacy Actions (keep for backward compat) ──────────────────
-
       fetchSettings: async () => {
         set({ isLoading: true });
         try {
-          const { data: serverSettingsArray, error } = await supabase.from('settings').select('*');
-          if (error) throw error;
+          const response = await fetch(`${API_BASE}/api/settings`, {
+            headers: getAuthHeaders(),
+          });
 
-          const serverSettings = {};
-          serverSettingsArray?.forEach(item => { serverSettings[item.key] = item.value; });
+          if (!response.ok) {
+            set({ isLoading: false });
+            return;
+          }
+
+          const serverSettings = await response.json();
 
           ['receipt_show_sku', 'receipt_show_price', 'receipt_show_tva', 'receipt_show_qrcode'].forEach(key => {
             if (serverSettings[key] === 'true') serverSettings[key] = true;
@@ -228,10 +259,11 @@ const useSettingsStore = create(
 
           for (const [stateKey, dbKey] of Object.entries(keyMap)) {
             if (newSettings[stateKey] !== undefined) {
-              await supabase.from('settings').upsert(
-                { key: dbKey, value: String(newSettings[stateKey]) },
-                { onConflict: 'key' }
-              );
+              await fetch(`${API_BASE}/api/settings/upsert`, {
+                method: 'POST',
+                headers: getAuthHeadersJson(),
+                body: JSON.stringify({ key: dbKey, value: String(newSettings[stateKey]) }),
+              });
             }
           }
 
@@ -302,13 +334,9 @@ const useSettingsStore = create(
       },
 
       subscribeToSettings: () => {
-        const channel = supabase.channel('settings-realtime')
-          .on('postgres_changes',
-            { event: '*', schema: 'public', table: 'settings' },
-            () => { get().loadSettings(true); }
-          )
-          .subscribe();
-        return channel;
+        return {
+          unsubscribe: () => {}
+        };
       },
     }),
     {

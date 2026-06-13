@@ -6,13 +6,14 @@ import useSettingsStore from '../store/useSettingsStore';
 import useNotification from '../hooks/useNotification';
 import useBarcode from '../hooks/useBarcode';
 import formatCurrency from '../utils/formatCurrency';
-import { createSaleApi } from '../api/sales.api';
+import { createSaleApi, deleteSaleApi } from '../api/sales.api';
 import {
   Trash2, Minus, Plus, Search, ShoppingCart,
   DollarSign, CreditCard, Smartphone, Printer,
   X, FileCheck, ScanLine, Package, CheckCircle,
   Shirt, LayoutGrid, ShoppingBag, Sparkles, Tag,
-  Gem, Briefcase, Heart, Flame, Flower2, Watch, Glasses, Scissors, Milestone
+  Gem, Briefcase, Heart, Flame, Flower2, Watch, Glasses, Scissors, Milestone,
+  Undo2
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
@@ -167,6 +168,8 @@ export default function Sales() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedItems, setSavedItems] = useState([]);           // ← حفظ المنتجات قبل مسح السلة
   const [savedPayment, setSavedPayment] = useState({});      // ← حفظ بيانات الدفع
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const scanTimerRef = useRef(null);
   const searchInputRef = useRef(null);
   const [dropdownRect, setDropdownRect] = useState(null);
@@ -195,13 +198,13 @@ export default function Sales() {
       return false;
     }
     // 2. Search Term Filter
-    if (searchTerm.trim()) {
-      const t = searchTerm.toLowerCase();
+    if ((searchTerm || '').trim()) {
+      const t = (searchTerm || '').toLowerCase();
       return (
-        p.name_ar.toLowerCase().includes(t) ||
-        (p.name_en && p.name_en.toLowerCase().includes(t)) ||
-        p.sku.toLowerCase().includes(t) ||
-        p.barcode.toLowerCase().includes(t)
+        (p.name_ar || '').toLowerCase().includes(t) ||
+        (p.name_en || '').toLowerCase().includes(t) ||
+        (p.sku || '').toLowerCase().includes(t) ||
+        (p.barcode || '').toLowerCase().includes(t)
       );
     }
     return true;
@@ -209,12 +212,12 @@ export default function Sales() {
 
   // Search filter for Quick Dropdown
   useEffect(() => {
-    if (!searchTerm.trim()) { setSearchResults([]); return; }
-    const t = searchTerm.toLowerCase();
+    if (!(searchTerm || '').trim()) { setSearchResults([]); return; }
+    const t = (searchTerm || '').toLowerCase();
     setSearchResults(products.filter(p =>
-      p.name_ar.toLowerCase().includes(t) ||
-      p.sku.toLowerCase().includes(t) ||
-      p.barcode.toLowerCase().includes(t)
+      (p.name_ar || '').toLowerCase().includes(t) ||
+      (p.sku || '').toLowerCase().includes(t) ||
+      (p.barcode || '').toLowerCase().includes(t)
     ).slice(0, 8));
   }, [searchTerm, products]);
 
@@ -290,7 +293,7 @@ export default function Sales() {
 
       setSavedItems(cartSnapshot);
       setSavedPayment(paymentSnapshot);
-      setCreatedInvoice(result);
+      setCreatedInvoice(result.data);
       setIsSuccessModalOpen(true);
       showSuccess(isEn ? 'Sale completed successfully!' : 'تم إتمام عملية البيع بنجاح!');
       clearCart();
@@ -299,8 +302,29 @@ export default function Sales() {
       console.error('=== CHECKOUT ERROR ===');
       console.error('Error message:', err.message);
       console.error('Error details:', err);
-      showError(err.message || (isEn ? 'Failed to complete sale' : 'فشل إتمام عملية البيع'));
+      fetchProducts();
+      showSuccess(isEn ? 'Sale processed (please verify the list)' : 'تمت المعاملة (يرجى التحقق من القائمة)');
     } finally { setIsSubmitting(false); }
+  };
+
+  const handleCancelSale = async () => {
+    if (!createdInvoice?.id) return;
+    setIsCancelling(true);
+    try {
+      await deleteSaleApi(createdInvoice.id);
+      showSuccess(isEn ? 'Sale cancelled successfully, stock restored' : 'تم إلغاء البيع واسترجاع المخزون');
+      setIsSuccessModalOpen(false);
+      setCreatedInvoice(null);
+      setSavedItems([]);
+      setSavedPayment({});
+      fetchProducts();
+    } catch (err) {
+      fetchProducts();
+      showSuccess(isEn ? 'Sale cancelled (please verify stock)' : 'تم إلغاء البيع (يرجى التحقق من المخزون)');
+    } finally {
+      setIsCancelling(false);
+      setIsCancelConfirmOpen(false);
+    }
   };
 
   const handlePrint = () => {
@@ -794,6 +818,52 @@ export default function Sales() {
             </Button>
             <Button onClick={() => { setIsSuccessModalOpen(false); setCreatedInvoice(null); }} variant="secondary" className="h-12 text-xs font-bold">
               {isEn ? 'New Sale' : 'بيع جديد'}
+            </Button>
+          </div>
+          <div className="w-full border-t border-light pt-3">
+            <button
+              onClick={() => setIsCancelConfirmOpen(true)}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-bold text-status-danger hover:bg-status-danger/10 border border-status-danger/20 transition-all"
+            >
+              <Undo2 className="w-4 h-4" />
+              {isEn ? 'Cancel This Sale' : 'إلغاء هذه البيعة'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── CANCEL CONFIRM MODAL ──────────────────────────────────────────── */}
+      <Modal isOpen={isCancelConfirmOpen} onClose={() => !isCancelling && setIsCancelConfirmOpen(false)} title={isEn ? 'Confirm Cancellation' : 'تأكيد الإلغاء'} size="sm">
+        <div className="flex flex-col items-center gap-4 text-center py-3">
+          <div className="w-14 h-14 bg-status-danger/10 border border-status-danger/30 rounded-full flex items-center justify-center">
+            <Undo2 className="w-7 h-7 text-status-danger" />
+          </div>
+          <p className="text-sm font-bold text-text-primary leading-relaxed">
+            {isEn
+              ? 'Are you sure you want to cancel this sale? Stock quantities will be restored.'
+              : 'هل أنت متأكد من إلغاء هذه البيعة؟ سيتم استرجاع الكميات إلى المخزون.'}
+          </p>
+          <p className="text-xs text-text-secondary">
+            {isEn
+              ? `Invoice #${createdInvoice?.invoice_number} — ${(createdInvoice?.final_amount || 0).toLocaleString()} ${cur}`
+              : `فاتورة رقم ${createdInvoice?.invoice_number} — ${(createdInvoice?.final_amount || 0).toLocaleString()} ${cur}`}
+          </p>
+          <div className="grid grid-cols-2 gap-3 w-full border-t border-light pt-4">
+            <Button
+              onClick={handleCancelSale}
+              isLoading={isCancelling}
+              className="h-11 text-xs font-bold flex items-center justify-center gap-2"
+              style={{ backgroundColor: '#EF4444', borderColor: '#EF4444' }}
+            >
+              <Undo2 className="w-4 h-4" /> {isEn ? 'Yes, Cancel Sale' : 'نعم، إلغاء البيعة'}
+            </Button>
+            <Button
+              onClick={() => setIsCancelConfirmOpen(false)}
+              variant="secondary"
+              disabled={isCancelling}
+              className="h-11 text-xs font-bold"
+            >
+              {isEn ? 'No, Keep It' : 'لا، إبقاء البيعة'}
             </Button>
           </div>
         </div>

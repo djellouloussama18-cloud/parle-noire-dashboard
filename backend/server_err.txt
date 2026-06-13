@@ -1,0 +1,1 @@
+POST /api/products error: Wrong API use : tried to bind a value of an unknown type (undefined).

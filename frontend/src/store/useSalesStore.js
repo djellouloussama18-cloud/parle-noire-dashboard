@@ -12,7 +12,9 @@ const useSalesStore = create((set, get) => ({
     lowStockCount: 0,
     topProduct: 'None',
     topProductQty: 0,
-    invoiceCount: 0
+    invoiceCount: 0,
+    totalInventoryValue: 0,
+    expectedProfit: 0,
   },
   chartsData: {
     salesTrend: [],

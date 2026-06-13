@@ -163,6 +163,49 @@ body { font-size: var(--app-font-size); }
   box-shadow: 0 0 20px rgba(var(--color-accent-rgb), 0.1), 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
+/* ── Date Input Styling ── */
+input[type="date"] {
+  color-scheme: dark;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 36px;
+}
+html[data-theme='light'] input[type="date"] {
+  color-scheme: light;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  background: none;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  filter: invert(0%);
+  opacity: 0.5;
+  transition: opacity 0.2s, filter 0.2s;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+html[data-theme='dark'] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(0deg);
+  opacity: 0.6;
+}
+html[data-theme='dark'] input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+input[type="date"]::-webkit-datetime-edit {
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+}
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  color: inherit;
+}
+input[type="date"]::-webkit-inner-spin-button,
+input[type="date"]::-webkit-clear-button {
+  display: none;
+}
+
 @media print {
   .no-print { display: none !important; }
   .print-only { display: block !important; }

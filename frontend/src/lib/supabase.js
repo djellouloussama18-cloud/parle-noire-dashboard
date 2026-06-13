@@ -1,16 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('⚠️ Supabase environment variables are missing! Check your .env file.');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = {
   auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
+    signInWithPassword: async () => { throw new Error('Supabase not in use - use local API'); },
+    signOut: async () => ({ error: null }),
+    getUser: async () => ({ data: { user: null }, error: null }),
+    signUp: async () => { throw new Error('Supabase not in use - use local API'); },
   },
-});
+  from: () => ({
+    select: () => ({ error: new Error('Supabase not in use') }),
+  }),
+  channel: () => ({
+    on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+    subscribe: () => ({ unsubscribe: () => {} }),
+  }),
+};

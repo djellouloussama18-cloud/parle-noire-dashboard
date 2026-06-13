@@ -51,7 +51,7 @@ export default function Customers() {
   }, []);
 
   const filteredCustomers = customers.filter(c =>
-    (c.name && c.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (c.name && c.name.toLowerCase().includes((searchQuery || '').toLowerCase())) ||
     (c.phone && c.phone.includes(searchQuery))
   );
 

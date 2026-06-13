@@ -4,14 +4,17 @@ import useInventoryStore from '../store/useInventoryStore';
 import useSettingsStore from '../store/useSettingsStore';
 import useSalesStore from '../store/useSalesStore';
 import useNotification from '../hooks/useNotification';
+import { getBreakdownApi } from '../api/reports.api';
 import formatCurrency from '../utils/formatCurrency';
 import {
   Receipt,
-  FileText,
+  TrendingDown,
   AlertTriangle,
   Star,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  DollarSign,
+  TrendingUp,
 } from 'lucide-react';
 
 // UI components
@@ -28,16 +31,48 @@ export default function Dashboard() {
   const { summary, chartsData, recentSales, loadDashboardStats, isLoading: isStatsLoading } = useSalesStore();
   const isEn = language === 'en';
 
-  const [timeFilter, setTimeFilter] = useState('week'); // day, week, month, year
+  const [timeFilter, setTimeFilter] = useState('day'); // day, week, month, year
+  const [breakdown, setBreakdown] = useState(null);
+
+  function getRangeDates(period) {
+    const now = new Date();
+    let from, to;
+    switch (period) {
+      case 'day':
+        from = now.toISOString().slice(0, 10);
+        to = from;
+        break;
+      case 'week': {
+        const start = new Date(now);
+        start.setDate(start.getDate() - start.getDay());
+        from = start.toISOString().slice(0, 10);
+        to = now.toISOString().slice(0, 10);
+        break;
+      }
+      case 'month':
+        from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+        to = now.toISOString().slice(0, 10);
+        break;
+      case 'year':
+        from = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10);
+        to = now.toISOString().slice(0, 10);
+        break;
+      default:
+        from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+        to = now.toISOString().slice(0, 10);
+    }
+    return { from, to };
+  }
 
   const loadData = async (force = false, period) => {
     try {
       const p = period || timeFilter;
-      // Fix 3 & 5: Refresh in background, already parallelized in store
+      const { from, to } = getRangeDates(p);
       await Promise.all([
         fetchProducts(),
         fetchCategories(),
-        loadDashboardStats(force, p)
+        loadDashboardStats(force, p),
+        getBreakdownApi({ from, to }).then(setBreakdown).catch(() => {})
       ]);
     } catch (err) {
       showError(isEn ? 'Error loading dashboard data' : 'حدث خطأ أثناء تحميل بيانات لوحة التحكم');
@@ -51,10 +86,16 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadDashboardStats(false, timeFilter);
+    const { from, to } = getRangeDates(timeFilter);
+    getBreakdownApi({ from, to }).then(setBreakdown).catch(() => {});
   }, [timeFilter]);
 
   useEffect(() => {
-    const handleRefresh = () => loadDashboardStats(true, timeFilter);
+    const handleRefresh = () => {
+      loadDashboardStats(true, timeFilter);
+      const { from, to } = getRangeDates(timeFilter);
+      getBreakdownApi({ from, to }).then(setBreakdown).catch(() => {});
+    };
     window.addEventListener('sale-completed', handleRefresh);
     window.addEventListener('dashboard-refresh', handleRefresh);
     return () => {
@@ -78,30 +119,71 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 1. KPIs Row (4 Cards) */}
+      {/* 1. KPIs Row (4 Cards): Revenue, COGS, Net Profit, Top Product */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <KpiCard
-          title={isEn
-            ? (timeFilter === 'day' ? "Today's Sales" : timeFilter === 'week' ? "This Week's Sales" : timeFilter === 'month' ? 'Monthly Sales' : 'Yearly Sales')
-            : (timeFilter === 'day' ? 'إجمالي مبيعات اليوم' : timeFilter === 'week' ? 'مبيعات الأسبوع' : timeFilter === 'month' ? 'مبيعات الشهر' : 'مبيعات السنة')}
-          value={formatCurrency(summary.totalRevenue)}
+          title={isEn ? 'Total Revenue' : 'إجمالي الإيرادات'}
+          value={formatCurrency(breakdown ? breakdown.revenue : summary.totalRevenue)}
           icon={Receipt}
-          trendText={`${summary.invoiceCount} ${isEn ? 'Invoices' : 'فواتير'}`}
+          trendText={breakdown ? `${breakdown.invoice_count} ${isEn ? 'Invoices' : 'فواتير'}` : `${summary.invoiceCount} ${isEn ? 'Invoices' : 'فواتير'}`}
           trendType="up"
           isLoading={isInitialLoading}
           iconColorClass="text-accent-primary bg-active"
         />
 
         <KpiCard
-          title={isEn ? 'Total Revenue' : 'إجمالي الإيرادات'}
-          value={formatCurrency(summary.netProfit)}
-          icon={FileText}
-          trendText={summary.profitMargin > 0 ? `${summary.profitMargin}% ${isEn ? 'margin' : 'هامش ربح'}` : ''}
+          title={isEn ? 'Cost of Goods Sold' : 'تكلفة البضاعة المباعة'}
+          value={formatCurrency(breakdown ? breakdown.cogs : 0)}
+          icon={TrendingDown}
+          trendText={breakdown && breakdown.gross_margin_percent > 0 ? `${breakdown.gross_margin_percent}% ${isEn ? 'gross margin' : 'هامش الربح الإجمالي'}` : ''}
+          trendType="down"
+          isLoading={isInitialLoading}
+          iconColorClass="text-status-danger bg-status-danger/10"
+        />
+
+        <KpiCard
+          title={isEn ? 'Net Profit' : 'صافي الربح'}
+          value={formatCurrency(breakdown ? breakdown.net_profit : (summary.netProfit || 0))}
+          icon={DollarSign}
+          trendText={breakdown ? (breakdown.revenue > 0 ? `${breakdown.net_margin_percent}% ${isEn ? 'net margin' : 'هامش صافي'}` : (breakdown.expenses > 0 ? (isEn ? 'Expenses exceed revenue' : 'مصاريف تفوق الإيرادات') : '')) : (summary.profitMargin > 0 ? `${summary.profitMargin}% ${isEn ? 'margin' : 'هامش صافي'}` : '')}
+          trendType={(breakdown ? breakdown.net_profit : summary.netProfit || 0) > 0 ? 'up' : (breakdown ? breakdown.net_profit : summary.netProfit || 0) < 0 ? 'down' : 'neutral'}
+          isLoading={isInitialLoading}
+          iconColorClass={(breakdown ? breakdown.net_profit : summary.netProfit || 0) > 0 ? 'text-emerald-400 bg-emerald-400/10' : (breakdown ? breakdown.net_profit : summary.netProfit || 0) < 0 ? 'text-red-400 bg-red-400/10' : 'text-sky-400 bg-sky-400/10'}
+        />
+
+        <KpiCard
+          title={isEn
+            ? (timeFilter === 'day' ? 'Top Selling Today' : timeFilter === 'week' ? 'Top This Week' : timeFilter === 'month' ? 'Top This Month' : 'Top This Year')
+            : (timeFilter === 'day' ? 'الأكثر مبيعاً اليوم' : timeFilter === 'week' ? 'الأكثر مبيعاً أسبوعياً' : timeFilter === 'month' ? 'الأكثر مبيعاً شهرياً' : 'الأكثر مبيعاً سنوياً')}
+          value={breakdown ? (breakdown.top_selling ? breakdown.top_selling.name_ar : summary.topProduct) : summary.topProduct}
+          icon={Star}
+          trendText={breakdown ? `${breakdown.top_selling ? breakdown.top_selling.units_sold : summary.topProductQty} ${isEn ? 'sold' : 'قطع مباعة'}` : `${summary.topProductQty} ${isEn ? 'sold' : 'قطع مباعة'}`}
+          trendType="up"
+          isLoading={isInitialLoading}
+          iconColorClass="text-status-warning bg-status-warning/10"
+        />
+      </div>
+
+      {/* 2. Metrics Row (3 Cards): Inventory Value, Expected Profit, Low Stock */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+        <KpiCard
+          title={isEn ? 'Total Inventory Value' : 'قيمة المخزون'}
+          value={formatCurrency(breakdown ? breakdown.inventory_value : summary.totalInventoryValue)}
+          icon={DollarSign}
+          trendText={isEn ? 'At purchase price' : 'سعر الشراء'}
+          trendType="neutral"
+          isLoading={isInitialLoading}
+          iconColorClass="text-accent-primary bg-active"
+        />
+        <KpiCard
+          title={isEn ? 'Expected Profit' : 'الفائدة المتوقعة'}
+          value={formatCurrency(breakdown ? breakdown.expected_inventory_profit : summary.expectedProfit)}
+          icon={TrendingUp}
+          trendText={isEn ? 'Sale price - Purchase price' : 'سعر البيع - سعر الشراء'}
           trendType="up"
           isLoading={isInitialLoading}
           iconColorClass="text-accent-secondary bg-accent-secondary/10"
         />
-
         <KpiCard
           title={isEn ? "Items to Reorder" : "منتجات تحتاج إعادة طلب"}
           value={`${summary.lowStockCount} ${isEn ? 'Items' : 'منتج'}`}
@@ -112,21 +194,9 @@ export default function Dashboard() {
           iconColorClass="text-status-warning bg-status-warning/10"
           onClick={() => navigate('/inventory')}
         />
-
-        <KpiCard
-          title={isEn
-            ? (timeFilter === 'day' ? 'Top Selling Today' : timeFilter === 'week' ? 'Top This Week' : timeFilter === 'month' ? 'Top This Month' : 'Top This Year')
-            : (timeFilter === 'day' ? 'الأكثر مبيعاً اليوم' : timeFilter === 'week' ? 'الأكثر مبيعاً أسبوعياً' : timeFilter === 'month' ? 'الأكثر مبيعاً شهرياً' : 'الأكثر مبيعاً سنوياً')}
-          value={summary.topProduct}
-          icon={Star}
-          trendText={`${summary.topProductQty} ${isEn ? 'sold' : 'قطع مباعة'}`}
-          trendType="up"
-          isLoading={isInitialLoading}
-          iconColorClass="text-status-warning bg-status-warning/10"
-        />
       </div>
 
-      {/* 2. Middle Row: Sales Trend (65%) & Recent Invoices (35%) */}
+      {/* 3. Middle Row: Sales Trend (65%) & Recent Invoices (35%) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sales Area Chart (65%) */}
         <div className="lg:col-span-2 glass-panel p-4 md:p-6 rounded-2xl border border-medium flex flex-col justify-between min-h-[260px] md:min-h-[380px]">
@@ -210,7 +280,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 3. Lower Row: Top products (33%) / Category Split (33%) / AI Assistant (33%) */}
+      {/* 4. Lower Row: Top products (33%) / Category Split (33%) / AI Assistant (33%) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
         {/* Top products list (33%) */}

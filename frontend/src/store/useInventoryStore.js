@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
 import {
   getProductsApi, createProductApi, updateProductApi, deleteProductApi,
   getCategoriesApi, createCategoryApi, updateCategoryApi, deleteCategoryApi
@@ -14,8 +13,7 @@ const useInventoryStore = create((set, get) => ({
   fetchProducts: async () => {
     set({ isLoading: true });
     try {
-      const { data, error } = await supabase.from('products').select('*, categories(*)').order('created_at', { ascending: false });
-      if (error) throw error;
+      const data = await getProductsApi();
       set({ products: data || [], isLoading: false });
     } catch (err) {
       set({ error: 'فشل تحميل المنتجات', isLoading: false });
@@ -29,8 +27,7 @@ const useInventoryStore = create((set, get) => ({
 
   fetchCategories: async () => {
     try {
-      const { data, error } = await supabase.from('categories').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
+      const data = await getCategoriesApi();
       set({ categories: data || [] });
     } catch (err) {
       console.error('Error fetching categories:', err);
@@ -39,25 +36,25 @@ const useInventoryStore = create((set, get) => ({
 
   addProduct: async (prodData) => {
     try {
-      const newProduct = await createProductApi(prodData);
-      set({ products: [newProduct, ...get().products] });
-      return newProduct;
+      const result = await createProductApi(prodData);
+      const product = result.data || result; // API returns { success, data }, local returns object directly
+      set({ products: [product, ...get().products] });
+      return product;
     } catch (err) {
-      const msg = err.response?.data?.message || 'حدث خطأ أثناء إضافة المنتج';
-      throw new Error(msg);
+      throw new Error(err.message || 'حدث خطأ أثناء إضافة المنتج');
     }
   },
 
   updateProduct: async (id, prodData) => {
     try {
-      const updated = await updateProductApi(id, prodData);
+      const result = await updateProductApi(id, prodData);
+      const updated = result.data || result; // API returns { success, data }, local returns object directly
       set({
         products: get().products.map(p => p.id === parseInt(id, 10) ? updated : p)
       });
       return updated;
     } catch (err) {
-      const msg = err.response?.data?.message || 'حدث خطأ أثناء تعديل المنتج';
-      throw new Error(msg);
+      throw new Error(err.message || 'حدث خطأ أثناء تعديل المنتج');
     }
   },
 
@@ -68,32 +65,31 @@ const useInventoryStore = create((set, get) => ({
         products: get().products.filter(p => p.id !== parseInt(id, 10))
       });
     } catch (err) {
-      const msg = err.response?.data?.message || 'حدث خطأ أثناء حذف المنتج';
-      throw new Error(msg);
+      throw new Error(err.message || 'حدث خطأ أثناء حذف المنتج');
     }
   },
 
   addCategory: async (catData) => {
     try {
-      const newCategory = await createCategoryApi(catData);
-      set({ categories: [...get().categories, newCategory] });
-      return newCategory;
+      const result = await createCategoryApi(catData);
+      const category = result.data || result; // API returns { success, data }, local returns object directly
+      set({ categories: [...get().categories, category] });
+      return category;
     } catch (err) {
-      const msg = err.response?.data?.message || 'حدث خطأ أثناء إضافة الفئة';
-      throw new Error(msg);
+      throw new Error(err.message || 'حدث خطأ أثناء إضافة الفئة');
     }
   },
 
   updateCategory: async (id, catData) => {
     try {
-      const updated = await updateCategoryApi(id, catData);
+      const result = await updateCategoryApi(id, catData);
+      const updated = result.data || result;
       set({
         categories: get().categories.map(c => c.id === parseInt(id, 10) ? updated : c)
       });
       return updated;
     } catch (err) {
-      const msg = err.response?.data?.message || 'حدث خطأ أثناء تعديل الفئة';
-      throw new Error(msg);
+      throw new Error(err.message || 'حدث خطأ أثناء تعديل الفئة');
     }
   },
 
@@ -104,19 +100,14 @@ const useInventoryStore = create((set, get) => ({
         categories: get().categories.filter(c => c.id !== parseInt(id, 10))
       });
     } catch (err) {
-      const msg = err.response?.data?.message || 'حدث خطأ أثناء حذف الفئة';
-      throw new Error(msg);
+      throw new Error(err.message || 'حدث خطأ أثناء حذف الفئة');
     }
   },
 
   subscribeToProducts: () => {
-    const channel = supabase.channel('products-realtime')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'products' },
-        () => { get().loadProducts(); }
-      )
-      .subscribe();
-    return channel;
+    return {
+      unsubscribe: () => {}
+    };
   },
 }));
 

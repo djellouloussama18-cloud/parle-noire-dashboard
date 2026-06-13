@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import useInventoryStore from '../store/useInventoryStore';
-import { updateProductApi } from '../api/products.api';
 import useSettingsStore from '../store/useSettingsStore';
 import useNotification from '../hooks/useNotification';
 import formatCurrency from '../utils/formatCurrency';
@@ -50,6 +49,7 @@ export default function Inventory() {
     updateProduct,
     deleteProduct,
     addCategory,
+    updateCategory,
     deleteCategory
   } = useInventoryStore();
 
@@ -88,6 +88,7 @@ export default function Inventory() {
   const [dragActive, setDragActive] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const [imageFile, setImageFile] = useState(null); // raw File object for upload
 
   const clearFieldError = (field) => {
     setFormErrors(prev => {
@@ -116,6 +117,7 @@ export default function Inventory() {
       return;
     }
 
+    setImageFile(file); // keep raw File for FormData upload
     const reader = new FileReader();
     reader.onloadend = () => {
       setFormData(prev => ({ ...prev, image_url: reader.result }));
@@ -149,6 +151,7 @@ export default function Inventory() {
         return;
       }
       
+      setImageFile(file); // keep raw File for FormData upload
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData(prev => ({ ...prev, image_url: reader.result }));
@@ -179,9 +182,9 @@ export default function Inventory() {
 
   // Filter products catalog
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name_ar.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.barcode.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (p.name_ar || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || 
+                          (p.sku || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+                          (p.barcode || '').toLowerCase().includes((searchTerm || '').toLowerCase());
     
     const matchesCat = selectedCat === 'all' || p.category_id === parseInt(selectedCat, 10);
     const matchesLow = !showLowStockOnly || p.quantity <= p.min_quantity;
@@ -191,6 +194,7 @@ export default function Inventory() {
 
   const handleOpenAdd = () => {
     setEditingId(null);
+    setImageFile(null);
     setFormData({
       name_ar: '',
       name_en: '',
@@ -207,7 +211,14 @@ export default function Inventory() {
   };
 
   const handleOpenEdit = (p) => {
-    setEditingId(p.id);
+    const productId = Number(p.id);
+    if (!productId) {
+      console.error('[Inventory] Cannot edit product with invalid id', p);
+      showError(isEn ? 'Cannot edit: invalid product data' : 'لا يمكن التعديل: بيانات المنتج غير صالحة');
+      return;
+    }
+    setEditingId(productId);
+    setImageFile(null);
     setFormData({
       name_ar: p.name_ar,
       name_en: p.name_en || '',
@@ -257,24 +268,24 @@ export default function Inventory() {
       sale_price: parseFloat(formData.sale_price),
       quantity: parseInt(formData.quantity || 0, 10),
       min_quantity: parseInt(formData.min_quantity || 1, 10),
-      category_id: parseInt(formData.category_id, 10)
+      category_id: parseInt(formData.category_id, 10),
+      image_url: formData.image_url || ''
     };
 
     if (editingId) {
+      if (!editingId || editingId <= 0) {
+        console.error('[Inventory] edit handler called without valid id — refusing to save as add', { editingId });
+        showError(isEn ? 'Cannot save: product ID missing. Please reload.' : 'لا يمكن الحفظ: معرف المنتج مفقود. يرجى إعادة التحميل.');
+        setIsSavingProduct(false);
+        return;
+      }
       setIsModalOpen(false);
-      const originalProduct = products.find(p => p.id === editingId);
-      useInventoryStore.setState(state => ({
-        products: state.products.map(p =>
-          p.id === editingId ? { ...p, ...payload } : p
-        )
-      }));
       try {
         const apiPayload = { ...payload };
-        const imageChanged = formData.image_url !== originalProduct?.image_url;
-        if (imageChanged && formData.image_url) {
-          apiPayload.image_url = formData.image_url;
+        if (imageFile) {
+          apiPayload.image = imageFile;
         }
-        await updateProductApi(editingId, apiPayload);
+        await updateProduct(editingId, apiPayload);
         showSuccess(isEn ? 'Product updated successfully!' : 'تم تعديل المنتج في المخزن بنجاح!');
       } catch (err) {
         showError(err.message || (isEn ? 'Failed to save product' : 'فشل حفظ المنتج'));
@@ -284,7 +295,10 @@ export default function Inventory() {
       }
     } else {
       try {
-        const addPayload = { ...payload, image_url: formData.image_url || null };
+        const addPayload = { ...payload };
+        if (imageFile) {
+          addPayload.image = imageFile;
+        }
         await addProduct(addPayload);
         showSuccess(isEn ? 'New product added successfully!' : 'تمت إضافة المنتج الجديد للمخزن!');
         setIsModalOpen(false);
@@ -327,6 +341,7 @@ export default function Inventory() {
       await addCategory(newCategoryData);
       showSuccess(isEn ? 'Category added successfully' : 'تمت إضافة الفئة بنجاح');
       setNewCategoryData({ name_ar: '', name_en: '', color: '#00FF7F', icon: 'Tag' });
+      fetchCategories();
     } catch (err) {
       showError(err.message || (isEn ? 'Failed to add category' : 'فشل إضافة الفئة'));
     } finally {
@@ -345,6 +360,7 @@ export default function Inventory() {
           await deleteCategory(id);
           showSuccess(isEn ? 'Category deleted successfully' : 'تم حذف الفئة بنجاح');
           setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          fetchCategories();
         } catch (err) {
           showError(err.message || (isEn ? 'Failed to delete category (may contain products)' : 'فشل حذف الفئة (قد تحتوي على منتجات مرتبطة بها)'));
           setConfirmModal(prev => ({ ...prev, isLoading: false }));
@@ -522,7 +538,7 @@ export default function Inventory() {
                     <div className="flex items-center gap-2 md:gap-3.5 justify-start">
                       <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-selected border border-medium flex items-center justify-center text-accent-primary overflow-hidden">
                         {p.image_url ? (
-                          <img src={p.image_url} alt={p.name_en || p.name_ar} className="w-full h-full object-cover" />
+                          <img src={p.image_url.startsWith('data:') ? p.image_url : p.image_url} alt={p.name_en || p.name_ar} className="w-full h-full object-cover" onError={(e) => { if (e.target.src !== '/placeholder.png') e.target.src = '/placeholder.png'; }} />
                         ) : (
                           <ImageIcon className="w-4 md:w-5 h-4 md:h-5 opacity-60" />
                         )}
@@ -630,7 +646,7 @@ export default function Inventory() {
                       </div>
                       <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-selected border border-medium flex items-center justify-center text-accent-primary overflow-hidden">
                         {p.image_url ? (
-                          <img src={p.image_url} alt={p.name_ar} className="w-full h-full object-cover" />
+                          <img src={p.image_url.startsWith('data:') ? p.image_url : p.image_url} alt={p.name_ar} className="w-full h-full object-cover" onError={(e) => { if (e.target.src !== '/placeholder.png') e.target.src = '/placeholder.png'; }} />
                         ) : (
                           <ImageIcon className="w-4 md:w-5 h-4 md:h-5 opacity-60" />
                         )}
@@ -643,6 +659,38 @@ export default function Inventory() {
           );
         }}
       />
+
+      {/* Summary rows */}
+      {products.length > 0 && (
+        <div className="flex flex-col md:flex-row justify-end gap-2 md:gap-4 px-1">
+          <div className={`glass-panel rounded-xl border border-medium px-4 md:px-5 py-3 md:py-3.5 flex items-center gap-3 md:gap-4 ${isEn ? 'flex-row' : 'flex-row-reverse'}`}>
+            <div className="w-8 h-8 rounded-lg bg-status-info/10 flex items-center justify-center">
+              <span className="text-status-info text-xs font-black">{'$'}</span>
+            </div>
+            <div className={`flex flex-col ${isEn ? 'text-left' : 'text-right'}`}>
+              <span className="text-[10px] md:text-[11px] font-bold text-text-secondary whitespace-nowrap">
+                {isEn ? 'Total Purchase Value' : 'إجمالي سعر الشراء'}
+              </span>
+              <span className="text-sm md:text-base font-black text-text-primary">
+                {formatCurrency(products.reduce((sum, p) => sum + (p.purchase_price || 0) * (p.quantity || 0), 0))}
+              </span>
+            </div>
+          </div>
+          <div className={`glass-panel rounded-xl border border-medium px-4 md:px-5 py-3 md:py-3.5 flex items-center gap-3 md:gap-4 ${isEn ? 'flex-row' : 'flex-row-reverse'}`}>
+            <div className="w-8 h-8 rounded-lg bg-accent-primary/10 flex items-center justify-center">
+              <span className="text-accent-primary text-xs font-black">{'$'}</span>
+            </div>
+            <div className={`flex flex-col ${isEn ? 'text-left' : 'text-right'}`}>
+              <span className="text-[10px] md:text-[11px] font-bold text-text-secondary whitespace-nowrap">
+                {isEn ? 'Total Sale Value' : 'إجمالي سعر البيع'}
+              </span>
+              <span className="text-sm md:text-base font-black text-text-primary">
+                {formatCurrency(products.reduce((sum, p) => sum + (p.sale_price || 0) * (p.quantity || 0), 0))}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 4. Add/Edit Product Modal Dialog */}
       <Modal
@@ -864,7 +912,10 @@ export default function Inventory() {
                 <div className="relative group w-full h-[150px] rounded-2xl overflow-hidden bg-subtle border border-default flex items-center justify-center transition-all duration-300">
                   <img src={formData.image_url} alt="Product preview" className="w-full h-full object-contain p-2" />
                   <div className="absolute inset-0 bg-bg-primary/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+                    <button type="button" onClick={() => {
+                      setFormData(prev => ({ ...prev, image_url: '' }));
+                      showSuccess(isEn ? 'Image removed successfully' : 'تم حذف الصورة بنجاح');
+                    }}
                       className="p-3 bg-status-danger text-on-accent rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg shadow-status-danger/30"
                       title={isEn ? 'Remove Image' : 'حذف الصورة'}
                     >

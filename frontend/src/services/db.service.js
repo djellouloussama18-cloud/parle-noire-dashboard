@@ -1,6 +1,6 @@
 const DB_NAME = 'ParleNoireDB';
-const DB_VERSION = 1;
-const STORES = ['products', 'categories', 'customers', 'settings', 'sales', 'notes'];
+const DB_VERSION = 2;
+const STORES = ['products', 'categories', 'customers', 'settings', 'sales', 'notes', 'expenses'];
 
 function openDB() {
   return new Promise((resolve, reject) => {

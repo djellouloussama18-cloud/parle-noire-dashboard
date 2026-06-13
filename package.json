@@ -1,13 +1,58 @@
 {
   "name": "pos-fashion-store",
+  "main": "electron/main.js",
   "version": "1.0.0",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend",
     "build": "npm run build --prefix frontend",
-    "start": "npm run start --prefix backend"
+    "start": "npm run start --prefix backend",
+    "migrate": "node migrate.js",
+    "electron:dev": "electron .",
+    "electron:build:linux": "npm run build:frontend && electron-builder --linux AppImage",
+    "build:frontend": "cd frontend && npm run build"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.2"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.106.0",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^16.4.5",
+    "sql.js": "^1.14.1",
+    "uuid": "^14.0.0"
+  },
+  "build": {
+    "appId": "com.parlenoire.pos",
+    "productName": "Parle Noire POS",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "backend/**/*",
+      "frontend/dist/**/*",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "backend/database",
+        "to": "app/backend/database"
+      },
+      {
+        "from": "uploads",
+        "to": "uploads"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Office",
+      "icon": "frontend/public/icon.png"
+    }
   }
 }

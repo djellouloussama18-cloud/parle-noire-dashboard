@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import useAuthStore from '../../store/useAuthStore';
 import useCartStore from '../../store/useCartStore';
 import useInventoryStore from '../../store/useInventoryStore';
 import useSettingsStore from '../../store/useSettingsStore';
 import useNotesStore from '../../store/useNotesStore';
+import useLicenseStore from '../../store/useLicenseStore';
 import { supabase } from '../../lib/supabase';
 import ConnectionStatus from '../ui/ConnectionStatus';
 import {
@@ -12,23 +12,21 @@ import {
   Receipt,
   Package,
   TrendingUp,
+  TrendingDown,
   QrCode,
   Printer,
   Settings,
-  LogOut,
   Shirt,
   Menu,
   Users,
   StickyNote,
+  CalendarDays,
   X
 } from 'lucide-react';
 
 export default function Sidebar({ isExpanded, setIsExpanded }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const logout = useAuthStore(state => state.logout);
-  const user = useAuthStore(state => state.user);
-  
   const { language, settings, storeName } = useSettingsStore();
   const isEn = language === 'en';
   const [localLogo, setLocalLogo] = useState('');
@@ -74,16 +72,13 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     { path: '/inventory', label: isEn ? 'Inventory' : 'المخزون', icon: Package, alert: lowStockCount > 0 ? lowStockCount : null },
     { path: '/customers', label: isEn ? 'Customers' : 'الزبائن', icon: Users },
     { path: '/reports', label: isEn ? 'Reports' : 'التقارير', icon: TrendingUp },
+    { path: '/expenses', label: isEn ? 'Expenses' : 'المصاريف', icon: TrendingDown },
+    { path: '/calendar', label: isEn ? 'Sales Calendar' : 'تقويم المبيعات', icon: CalendarDays },
     { path: '/barcode', label: isEn ? 'Barcode' : 'الباركود', icon: QrCode },
     { path: '/print', label: isEn ? 'Printing' : 'الطباعة', icon: Printer },
     { path: '/notes', label: isEn ? 'Notes' : 'الملاحظات', icon: StickyNote, alert: unreadNotes > 0 ? unreadNotes : null },
     { path: '/settings', label: isEn ? 'Settings' : 'الإعدادات', icon: Settings },
   ];
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
 
   const expanded = isExpanded || isHovered || isOpen;
 
@@ -202,39 +197,14 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         })}
       </nav>
 
-      {/* 3. User Details Footer */}
-      <div className="border-t border-light bg-bg-secondary/40 p-3 flex flex-col gap-2 flex-shrink-0">
-        <div className="flex justify-center mb-2">
-           <ConnectionStatus />
-        </div>
-        <div className={`flex items-center ${expanded ? 'justify-between px-1' : 'justify-center'} ${isEn ? 'flex-row-reverse' : ''}`}>
-          {expanded && (
-            <div className={`flex items-center gap-2.5 ${isEn ? 'text-left flex-row-reverse' : 'text-right'}`}>
-              <div className="w-9 h-9 rounded-full bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center font-extrabold text-accent-primary text-xs select-none">
-                {user?.username?.substring(0, 2).toUpperCase() || 'AD'}
-              </div>
-              <div className={`flex flex-col ${isEn ? 'items-start' : 'items-start'}`}>
-                <span className="text-[13px] font-bold text-text-primary">{user?.username || (isEn ? 'Admin' : 'المدير')}</span>
-                <span className="text-[10px] text-text-secondary font-medium">{isEn ? 'System Admin' : 'مدير النظام'}</span>
-              </div>
-            </div>
-          )}
-          {!expanded && (
-            <div className="w-9 h-9 rounded-full bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center font-extrabold text-accent-primary text-xs select-none">
-              {user?.username?.substring(0, 2).toUpperCase() || 'AD'}
-            </div>
-          )}
-
-          {expanded && (
-            <button
-              onClick={handleLogout}
-              className="p-2 text-status-danger hover:bg-status-danger/10 rounded-lg transition-colors focus:outline-none"
-              title={isEn ? 'Logout' : 'تسجيل الخروج'}
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+      {/* 3. Connection Status Footer */}
+      <div className="border-t border-light bg-bg-secondary/40 p-3 flex flex-col items-center gap-1 flex-shrink-0">
+        <ConnectionStatus />
+        {useLicenseStore.getState().serial && (
+          <span className="text-[9px] text-text-disabled font-bold tracking-wider select-none">
+            {isEn ? 'License: ' : 'الترخيص: '}{useLicenseStore.getState().serial}
+          </span>
+        )}
       </div>
     </aside>
 

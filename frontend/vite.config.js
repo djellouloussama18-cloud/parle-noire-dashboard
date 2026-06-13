@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  base: './',
   plugins: [
     react(),
   ],
@@ -11,5 +12,15 @@ export default defineConfig({
   server: {
     port: 5173,
     host: '0.0.0.0',
-  }
+  },
+  build: {
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash][extname]',
+      },
+    },
+  },
 })

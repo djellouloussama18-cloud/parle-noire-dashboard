@@ -59,7 +59,7 @@ const useCartStore = create((set, get) => ({
   },
 
   setDiscount: (amount) => {
-    set({ discountAmount: Math.max(0, parseFloat(amount || 0)) });
+    set({ discountAmount: Math.round(Math.max(0, parseFloat(amount || 0)) * 100) / 100 }); // math: round to 2dp
   },
 
   setPaymentMethod: (method) => {
@@ -67,7 +67,7 @@ const useCartStore = create((set, get) => ({
   },
 
   setAmountPaid: (paid) => {
-    set({ amountPaid: Math.max(0, parseFloat(paid || 0)) });
+    set({ amountPaid: Math.round(Math.max(0, parseFloat(paid || 0)) * 100) / 100 }); // math: round to 2dp
   },
 
   setNotes: (notes) => {
@@ -75,7 +75,7 @@ const useCartStore = create((set, get) => ({
   },
 
   setTaxRate: (rate) => {
-    set({ taxRate: Math.max(0, parseFloat(rate) || 0) });
+    set({ taxRate: Math.round(Math.max(0, parseFloat(rate) || 0) * 100) / 100 }); // math: round to 2dp
   },
 
   clearCart: () => {
@@ -90,27 +90,27 @@ const useCartStore = create((set, get) => ({
 
   // Computations
   getSubtotal: () => {
-    return get().items.reduce((sum, item) => sum + (item.product.sale_price * item.quantity), 0);
+    return Math.round(get().items.reduce((sum, item) => sum + (item.product.sale_price * item.quantity), 0) * 100) / 100; // math: round to 2dp
   },
 
   getTaxAmount: () => {
     const subtotal = get().getSubtotal();
     const discount = get().discountAmount;
     const base = Math.max(0, subtotal - discount);
-    return Math.round(base * (get().taxRate / 100));
+    return Math.round(base * (get().taxRate / 100) * 100) / 100; // math: round to 2dp instead of integer
   },
 
   getFinalTotal: () => {
     const subtotal = get().getSubtotal();
     const discount = get().discountAmount;
     const tax = get().getTaxAmount();
-    return Math.max(0, subtotal - discount + tax);
+    return Math.round(Math.max(0, subtotal - discount + tax) * 100) / 100; // math: round to 2dp
   },
 
   getChangeAmount: () => {
     const total = get().getFinalTotal();
     const paid = get().amountPaid;
-    return paid > total ? paid - total : 0;
+    return paid > total ? Math.round((paid - total) * 100) / 100 : 0; // math: round to 2dp
   }
 }));
 

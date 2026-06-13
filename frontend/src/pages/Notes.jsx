@@ -78,8 +78,8 @@ export default function Notes() {
     if (searchTerm) {
       const t = searchTerm.toLowerCase();
       return (
-        note.title.toLowerCase().includes(t) ||
-        note.content.toLowerCase().includes(t)
+        (note.title || '').toLowerCase().includes(t) ||
+        (note.content || '').toLowerCase().includes(t)
       );
     }
     return true;

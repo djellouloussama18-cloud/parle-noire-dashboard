@@ -1,7 +1,11 @@
-import { supabase } from '../lib/supabase';
 import { offlineDB } from '../services/db.service';
 
-// ─── Helper: today's date range ─────────────────────────────────────────────
+import { API_BASE } from './config';
+
+function getAuthHeaders() {
+  return {};
+}
+
 function todayRange() {
   const s = new Date();
   s.setHours(0, 0, 0, 0);
@@ -10,7 +14,16 @@ function todayRange() {
   return { start: s.toISOString(), end: e.toISOString() };
 }
 
-// ─── Analytics Queries ──────────────────────────────────────────────────────
+async function fetchWithApi(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: { ...getAuthHeaders(), ...options.headers },
+    ...options
+  });
+  if (!response.ok) {
+    throw new Error(`API request failed: ${path}`);
+  }
+  return response.json();
+}
 
 async function getTodaySales(lang) {
   let data;
@@ -20,17 +33,17 @@ async function getTodaySales(lang) {
     data = allSales.filter(s => s.created_at >= start && s.created_at < end);
   } else {
     const { start, end } = todayRange();
-    const { data: _data, error } = await supabase
-      .from('sales')
-      .select('final_amount')
-      .gte('created_at', start)
-      .lt('created_at', end);
-    if (error) throw error;
-    data = _data;
+    try {
+      const allSales = await fetchWithApi('/api/sales');
+      data = allSales.filter(s => s.created_at >= start && s.created_at < end);
+    } catch {
+      const allSales = await offlineDB.getAll('sales');
+      data = allSales.filter(s => s.created_at >= start && s.created_at < end);
+    }
   }
 
   const count = data.length;
-  const revenue = data.reduce((s, r) => s + Number(r.final_amount), 0);
+  const revenue = data.reduce((s, r) => s + Number(r.final_amount || 0), 0);
   return lang === 'ar'
     ? `📊 أهلاً بك! إجمالي مبيعات اليوم هو ${revenue.toLocaleString()} د.ج من إجمالي ${count} طلبية.`
     : `📊 Welcome! Today's total sales are ${revenue.toLocaleString()} DZD from ${count} orders.`;
@@ -40,14 +53,15 @@ async function getLowStock(lang) {
   let data;
   if (!navigator.onLine) {
     const allProducts = await offlineDB.getAll('products');
-    data = allProducts.filter(p => p.quantity < 5);
+    data = allProducts.filter(p => p.quantity < (p.min_quantity || 5)); // math: use min_quantity instead of hardcoded 5
   } else {
-    const { data: _data, error } = await supabase
-      .from('products')
-      .select('name_ar, name_en, quantity, min_quantity, sale_price')
-      .lt('quantity', 5);
-    if (error) throw error;
-    data = _data;
+    try {
+      const allProducts = await fetchWithApi('/api/products');
+      data = allProducts.filter(p => p.quantity < (p.min_quantity || 5)); // math: use min_quantity instead of hardcoded 5
+    } catch {
+      const allProducts = await offlineDB.getAll('products');
+      data = allProducts.filter(p => p.quantity < (p.min_quantity || 5)); // math: use min_quantity instead of hardcoded 5
+    }
   }
 
   if (data.length === 0) {
@@ -71,13 +85,13 @@ async function getBestPromoTime(lang) {
     const allSales = await offlineDB.getAll('sales');
     data = allSales.filter(s => s.created_at >= today && s.created_at < today + 'T23:59:59.999Z');
   } else {
-    const { data: _data, error } = await supabase
-      .from('sales')
-      .select('created_at, final_amount')
-      .gte('created_at', today)
-      .lt('created_at', today + 'T23:59:59.999Z');
-    if (error) throw error;
-    data = _data;
+    try {
+      const allSales = await fetchWithApi('/api/sales');
+      data = allSales.filter(s => s.created_at >= today && s.created_at < today + 'T23:59:59.999Z');
+    } catch {
+      const allSales = await offlineDB.getAll('sales');
+      data = allSales.filter(s => s.created_at >= today && s.created_at < today + 'T23:59:59.999Z');
+    }
   }
 
   if (data.length === 0) {
@@ -109,11 +123,11 @@ async function getTotalStockStatus(lang) {
   if (!navigator.onLine) {
     products = await offlineDB.getAll('products');
   } else {
-    const { data: _products, error } = await supabase
-      .from('products')
-      .select('quantity, min_quantity, purchase_price, sale_price');
-    if (error) throw error;
-    products = _products;
+    try {
+      products = await fetchWithApi('/api/products');
+    } catch {
+      products = await offlineDB.getAll('products');
+    }
   }
 
   const totalItems = products.reduce((s, p) => s + Number(p.quantity), 0);
@@ -129,33 +143,24 @@ async function getTotalStockStatus(lang) {
 
 async function getCategoryInventory(lang) {
   let categories;
+  let products;
   if (!navigator.onLine) {
     categories = await offlineDB.getAll('categories');
+    products = await offlineDB.getAll('products');
   } else {
-    const { data: _categories, error: catErr } = await supabase
-      .from('categories')
-      .select('id, name_ar, name_en');
-    if (catErr) throw catErr;
-    categories = _categories;
+    try {
+      categories = await fetchWithApi('/api/categories');
+      products = await fetchWithApi('/api/products');
+    } catch {
+      categories = await offlineDB.getAll('categories');
+      products = await offlineDB.getAll('products');
+    }
   }
 
   const lines = [];
-  if (!navigator.onLine) {
-    const allProducts = await offlineDB.getAll('products');
-    for (const cat of categories) {
-      const count = allProducts.filter(p => p.category_id === cat.id).length;
-      lines.push(`• ${cat.name_ar}: ${count} منتج`);
-    }
-  } else {
-    for (const cat of categories) {
-      const { count, error } = await supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true })
-        .eq('category_id', cat.id);
-      if (!error) {
-        lines.push(`• ${cat.name_ar}: ${count} منتج`);
-      }
-    }
+  for (const cat of categories) {
+    const count = products.filter(p => p.category_id === cat.id).length;
+    lines.push(`• ${cat.name_ar}: ${count} منتج`);
   }
 
   return lang === 'ar'
@@ -164,7 +169,7 @@ async function getCategoryInventory(lang) {
 }
 
 async function searchProducts(query, lang) {
-  const t = query.toLowerCase();
+  const t = (query || '').toLowerCase();
   let data;
   if (!navigator.onLine) {
     const allProducts = await offlineDB.getAll('products');
@@ -175,13 +180,23 @@ async function searchProducts(query, lang) {
       (p.barcode && p.barcode.toLowerCase().includes(t))
     ).slice(0, 5);
   } else {
-    const { data: _data, error } = await supabase
-      .from('products')
-      .select('name_ar, name_en, sku, barcode, sale_price, quantity, image_url')
-      .or(`name_ar.ilike.%${t}%,name_en.ilike.%${t}%,sku.ilike.%${t}%,barcode.ilike.%${t}%`)
-      .limit(5);
-    if (error) throw error;
-    data = _data;
+    try {
+      const allProducts = await fetchWithApi('/api/products');
+      data = allProducts.filter(p =>
+        (p.name_ar && p.name_ar.toLowerCase().includes(t)) ||
+        (p.name_en && p.name_en.toLowerCase().includes(t)) ||
+        (p.sku && p.sku.toLowerCase().includes(t)) ||
+        (p.barcode && p.barcode.toLowerCase().includes(t))
+      ).slice(0, 5);
+    } catch {
+      const allProducts = await offlineDB.getAll('products');
+      data = allProducts.filter(p =>
+        (p.name_ar && p.name_ar.toLowerCase().includes(t)) ||
+        (p.name_en && p.name_en.toLowerCase().includes(t)) ||
+        (p.sku && p.sku.toLowerCase().includes(t)) ||
+        (p.barcode && p.barcode.toLowerCase().includes(t))
+      ).slice(0, 5);
+    }
   }
 
   if (data.length === 0) {
@@ -198,10 +213,8 @@ async function searchProducts(query, lang) {
     : `🔍 Search results for "${query}":\n${lines.join('\n')}`;
 }
 
-// ─── Main Router ────────────────────────────────────────────────────────────
-
 function detectIntent(text) {
-  const m = text.toLowerCase().trim();
+  const m = (text || '').toLowerCase().trim();
   if (/مبيعات\s?اليوم|today.*sales|إيرادات\s?اليوم|revenue.*today|دخل\s?اليوم/.test(m)) return 'today_sales';
   if (/منتج\w*\s*(ناقص|وشك|منخفض|low|alert)|low\s*stock|نفاد/.test(m)) return 'low_stock';
   if (/أفضل\s*وقت\s*(للترويج|للبيع)|peak.*(hour|time)|best.*promo|ترويج/.test(m)) return 'best_time';
@@ -264,7 +277,7 @@ export const getAnalysisApi = async (lang = 'ar') => {
     const vsY = yRev > 0 ? ((revenue - yRev) / yRev * 100).toFixed(1) : null;
 
     const profit = allProducts.reduce((s, p) => s + (Number(p.sale_price) - Number(p.purchase_price || 0)) * Number(p.quantity), 0);
-    const lowStock = allProducts.filter(p => p.quantity < 5).map(p => ({ name: p.name_ar, quantity: p.quantity, category: '', image_url: p.image_url }));
+    const lowStock = allProducts.filter(p => p.quantity < (p.min_quantity || 5)).map(p => ({ name: p.name_ar, quantity: p.quantity, category: '', image_url: p.image_url })); // math: use min_quantity instead of hardcoded 5
     const productCount = allProducts.length;
 
     const categories = allCategories.map(c => ({
@@ -296,74 +309,34 @@ export const getAnalysisApi = async (lang = 'ar') => {
     };
   }
 
-  const [todaySales, lowStock, prodCount, categories, topProductData, stockValue] = await Promise.all([
-    (async () => {
-      const { start, end } = todayRange();
-      const { data } = await supabase.from('sales').select('final_amount').gte('created_at', start).lt('created_at', end);
-      const count = data?.length || 0;
-      const revenue = data?.reduce((s, r) => s + Number(r.final_amount), 0) || 0;
+  try {
+    return await fetchWithApi('/api/reports/analysis');
+  } catch {
+    const [allSales, allProducts, allCategories] = await Promise.all([
+      offlineDB.getAll('sales'),
+      offlineDB.getAll('products'),
+      offlineDB.getAll('categories')
+    ]);
 
-      const y = new Date(); y.setDate(y.getDate() - 1);
-      const yStart = new Date(y.setHours(0,0,0,0)).toISOString();
-      const yEnd = new Date(y.setHours(23,59,59,999)).toISOString();
-      const { data: yData } = await supabase.from('sales').select('final_amount').gte('created_at', yStart).lt('created_at', yEnd);
-      const yRev = yData?.reduce((s, r) => s + Number(r.final_amount), 0) || 0;
-      const vsY = yRev > 0 ? ((revenue - yRev) / yRev * 100).toFixed(1) : null;
+    const { start, end } = todayRange();
+    const todaySalesData = allSales.filter(s => s.created_at >= start && s.created_at < end);
+    const count = todaySalesData.length;
+    const revenue = todaySalesData.reduce((s, r) => s + Number(r.final_amount), 0);
 
-      const { data: allProds } = await supabase.from('products').select('purchase_price, sale_price, quantity');
-      const profit = allProds?.reduce((s, p) => s + (Number(p.sale_price) - Number(p.purchase_price || 0)) * Number(p.quantity), 0) || 0;
+    const profit = allProducts.reduce((s, p) => s + (Number(p.sale_price) - Number(p.purchase_price || 0)) * Number(p.quantity), 0);
+    const lowStock = allProducts.filter(p => p.quantity < (p.min_quantity || 5)).map(p => ({ name: p.name_ar, quantity: p.quantity, category: '', image_url: p.image_url })); // math: use min_quantity instead of hardcoded 5
 
-      return { count, revenue, profit, vsYesterday: vsY ? Number(vsY) : null };
-    })(),
-    (async () => {
-      const { data } = await supabase.from('products').select('name_ar, name_en, quantity, image_url').lt('quantity', 5);
-      return (data || []).map(p => ({ name: p.name_ar, quantity: p.quantity, category: '', image_url: p.image_url }));
-    })(),
-    (async () => {
-      const { count } = await supabase.from('products').select('*', { count: 'exact', head: true });
-      return count || 0;
-    })(),
-    (async () => {
-      const { data: cats } = await supabase.from('categories').select('id, name_ar');
-      const result = [];
-      if (cats) {
-        for (const c of cats) {
-          const { count } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('category_id', c.id);
-          result.push({ name_ar: c.name_ar, count: count || 0 });
-        }
+    return {
+      context: {
+        todaySales: { count, revenue, profit, vsYesterday: null },
+        lowStock,
+        productCount: allProducts.length,
+        categories: allCategories.map(c => ({ name_ar: c.name_ar, count: 0 })),
+        topProduct: null,
+        stockValue: 0
       }
-      return result;
-    })(),
-    (async () => {
-      const { data } = await supabase.from('sale_items').select('product_id, product_name, quantity');
-      if (!data || data.length === 0) return null;
-      const counts = {};
-      data.forEach(item => {
-        if (!counts[item.product_id]) counts[item.product_id] = { name: item.product_name, qty: 0 };
-        counts[item.product_id].qty += item.quantity;
-      });
-      let top = null;
-      Object.entries(counts).forEach(([id, info]) => {
-        if (!top || info.qty > top.qty) top = { id: Number(id), name: info.name, qty_sold: info.qty };
-      });
-      return top ? { name: top.name } : null;
-    })(),
-    (async () => {
-      const { data } = await supabase.from('products').select('purchase_price, quantity');
-      return data?.reduce((s, p) => s + Number(p.purchase_price || 0) * Number(p.quantity), 0) || 0;
-    })()
-  ]);
-
-  return {
-    context: {
-      todaySales,
-      lowStock,
-      productCount: prodCount,
-      categories,
-      topProduct: topProductData,
-      stockValue
-    }
-  };
+    };
+  }
 };
 
 async function getFullAnalysis(lang) {

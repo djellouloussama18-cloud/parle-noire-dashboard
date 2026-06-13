@@ -1,0 +1,11 @@
+========================================
+  Parle Noire POS Server
+========================================
+  Running on: http://localhost:3001
+  Database: C:\Users\pC\parle noir2\pos_system\database\pos_store.db
+========================================
+  Default login:
+    Email: admin@pos.local
+    Password: admin123
+========================================
+Database ready

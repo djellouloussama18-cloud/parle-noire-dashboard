@@ -1,6 +1,15 @@
-import { supabase } from '../lib/supabase';
 import { offlineDB } from '../services/db.service';
 import { addToQueue } from '../services/offline-queue.service';
+
+import { API_BASE } from './config';
+
+function getAuthHeaders() {
+  return {};
+}
+
+function getAuthHeadersJson() {
+  return { 'Content-Type': 'application/json' };
+}
 
 export const getNotesApi = async (params = {}) => {
   if (!navigator.onLine) {
@@ -10,13 +19,30 @@ export const getNotesApi = async (params = {}) => {
     }
     return data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }
-  let query = supabase.from('notes').select('*').order('created_at', { ascending: false });
-  if (params.unreadOnly) {
-    query = query.eq('read', false);
+
+  try {
+    const url = params.unreadOnly
+      ? `${API_BASE}/api/notes?unreadOnly=true`
+      : `${API_BASE}/api/notes`;
+
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to fetch notes'}`);
+    }
+
+    const data = await response.json();
+    for (const note of data) {
+      await offlineDB.put('notes', note);
+    }
+    return data;
+  } catch (error) {
+    console.error('getNotes error:', error);
+    throw error;
   }
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data;
 };
 
 export const createNoteApi = async (noteData) => {
@@ -27,36 +53,94 @@ export const createNoteApi = async (noteData) => {
     await offlineDB.put('notes', data);
     return data;
   }
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data, error } = await supabase.from('notes').insert({ ...noteData, created_by: user?.id }).select().single();
-  if (error) throw new Error(error.message);
-  await offlineDB.put('notes', data);
-  return data;
+
+  try {
+    const response = await fetch(`${API_BASE}/api/notes`, {
+      method: 'POST',
+      headers: getAuthHeadersJson(),
+      body: JSON.stringify(noteData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText || 'Server error'}`);
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'فشلت العملية');
+    }
+
+    await offlineDB.put('notes', result.data);
+    return result;
+  } catch (error) {
+    console.error('createNote error:', error);
+    throw error;
+  }
 };
 
 export const updateNoteApi = async (id, noteData) => {
   if (!navigator.onLine) {
-    const data = { ...noteData, id };
+    const data = { ...noteData, id: parseInt(id, 10) };
     await addToQueue({ type: 'updateNote', payload: data });
     await offlineDB.put('notes', data);
     return data;
   }
-  const { data, error } = await supabase.from('notes').update(noteData).eq('id', id).select().single();
-  if (error) throw new Error(error.message);
-  await offlineDB.put('notes', data);
-  return data;
+
+  try {
+    const response = await fetch(`${API_BASE}/api/notes/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeadersJson(),
+      body: JSON.stringify(noteData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText || 'Server error'}`);
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'فشلت العملية');
+    }
+
+    await offlineDB.put('notes', result.data);
+    return result;
+  } catch (error) {
+    console.error('updateNote error:', error);
+    throw error;
+  }
 };
 
 export const deleteNoteApi = async (id) => {
   if (!navigator.onLine) {
     await addToQueue({ type: 'deleteNote', payload: { id } });
-    await offlineDB.remove('notes', id);
+    await offlineDB.remove('notes', parseInt(id, 10));
     return { success: true };
   }
-  const { error } = await supabase.from('notes').delete().eq('id', id);
-  if (error) throw new Error(error.message);
-  await offlineDB.remove('notes', id);
-  return { success: true };
+
+  try {
+    const response = await fetch(`${API_BASE}/api/notes/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText || 'Server error'}`);
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'فشلت العملية');
+    }
+
+    await offlineDB.remove('notes', parseInt(id, 10));
+    return result;
+  } catch (error) {
+    console.error('deleteNote error:', error);
+    throw error;
+  }
 };
 
 export const markNoteAsReadApi = async (id) => {
@@ -70,10 +154,29 @@ export const markNoteAsReadApi = async (id) => {
     }
     return { id, read: true };
   }
-  const { data, error } = await supabase.from('notes').update({ read: true }).eq('id', id).select().single();
-  if (error) throw new Error(error.message);
-  await offlineDB.put('notes', data);
-  return data;
+
+  try {
+    const response = await fetch(`${API_BASE}/api/notes/${id}/read`, {
+      method: 'PATCH',
+      headers: getAuthHeadersJson(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText || 'Server error'}`);
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'فشلت العملية');
+    }
+
+    await offlineDB.put('notes', result.data);
+    return result;
+  } catch (error) {
+    console.error('markNoteAsRead error:', error);
+    throw error;
+  }
 };
 
 export const getUnreadCountApi = async () => {
@@ -82,7 +185,20 @@ export const getUnreadCountApi = async () => {
     const count = data.filter(n => !n.read).length;
     return { count };
   }
-  const { count, error } = await supabase.from('notes').select('*', { count: 'exact', head: true }).eq('read', false);
-  if (error) throw new Error(error.message);
-  return { count: count || 0 };
+
+  try {
+    const response = await fetch(`${API_BASE}/api/notes/unread-count`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to get unread count'}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('getUnreadCount error:', error);
+    throw error;
+  }
 };
